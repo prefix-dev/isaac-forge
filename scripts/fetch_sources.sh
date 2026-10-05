@@ -7,7 +7,8 @@ CACHE="${ROOT}/.srccache"
 mkdir -p "${CACHE}"
 
 fetch() {  # repo url
-  local repo="$1" url="$2" dir="${CACHE}/${repo}"
+  local repo="$1" url="$2"
+  local dir="${CACHE}/${repo}"
   [ "$(cat "${dir}/.source-url" 2>/dev/null || true)" = "${url}" ] && { echo "  = ${repo}"; return; }
   local tmp; tmp="$(mktemp)"
   curl -fsSL -o "${tmp}" "${url}"
