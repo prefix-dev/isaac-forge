@@ -16,7 +16,7 @@ platforms = ["linux-64", "linux-aarch64"]
 # ---------------------------------------------------------------------------
 
 [dependencies]
-rattler-build = ">=0.72.2"
+rattler-build = ">=0.76.1"
 python = ">=3.12"
 git = "*"
 git-lfs = "*"

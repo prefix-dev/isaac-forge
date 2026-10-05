@@ -102,10 +102,10 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: prefix-dev/setup-pixi@v0.10.0
+      - uses: prefix-dev/setup-pixi@v0.10.2
         timeout-minutes: 15
         with:
-          pixi-version: v0.75.0
+          pixi-version: v0.81.0
           locked: true
       - run: pixi run render
 
@@ -158,11 +158,11 @@ jobs:
           sudo apt-get clean
           df -h /
 
-      - uses: prefix-dev/setup-pixi@v0.10.0
+      - uses: prefix-dev/setup-pixi@v0.10.2
         # A hang here should fail fast rather than sit on the job timeout.
         timeout-minutes: 15
         with:
-          pixi-version: v0.75.0
+          pixi-version: v0.81.0
           # pixi.lock pins rattler-build, so CI builds with the same version as local.
           locked: true
 
@@ -243,10 +243,10 @@ jobs:
             /usr/local/share/boost /usr/local/.ghcup
           df -h /
 
-      - uses: prefix-dev/setup-pixi@v0.10.0
+      - uses: prefix-dev/setup-pixi@v0.10.2
         timeout-minutes: 15
         with:
-          pixi-version: v0.75.0
+          pixi-version: v0.81.0
           locked: true
 
       # The solve and its result are in the log; a 4.6 package that no longer installs is
