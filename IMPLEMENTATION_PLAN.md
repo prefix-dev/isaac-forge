@@ -15,7 +15,7 @@ Supersedes wolfv/isaac-forge#3 (`lyrical-build-preview`).
 | CI | `release.yml`, two stages. `foundations` (per platform) → `ros` (platform × distro matrix, `needs: foundations`). Channel order for `ros`: `./output` → `isaac-forge/<distro>` → `robostack-<distro>` → `conda-forge`. |
 | Old channel | Stop publishing to the flat `isaac-forge` channel and leave it readable. Fill `isaac-forge/jazzy` with a rebuild (new hashes), not a copy. README points users to the new channels. |
 | Lyrical failures | Publish packages that pass, quarantine failures, and report them as **warnings** while Lyrical catches up. A per-distro `strict` flag in the matrix: Jazzy `true`, Lyrical `false`. |
-| PR CI | On `pull_request`, build and test only the recipes the PR changed (plus everything if any foundation changed), for both distros and both platforms. No upload and no `id-token` on PRs. Replaces `lyrical-pr.yml`. |
+| PR CI | On `pull_request`, build and test only the recipes the PR changed (changed foundations too), for both distros and both platforms; a render check covers everything else. No upload and no `id-token` on PRs. Replaces `lyrical-pr.yml`. |
 | Missing Lyrical deps | `realsense2-camera-msgs`, `moveit2-tutorials`: upstream PR to RoboStack/ros-lyrical. Until it merges, `skip: ros_distro == "lyrical"` with a link to that PR on the 3 recipes that use them. `tl-expected` → `rcpputils` selector in isaac-deploy-core. |
 | flexiv-msgs | In neither RoboStack distro. Removed from isaac-ros-deploy-reference-applications with a `DROP_DEPS` entry in `gen_source.py` (done). Only the Flexiv hardware scripts need it. |
 | tensorrt-python | Unchanged deb repack (Jetson, py312). `skip` when python is not 3.12, so Lyrical doesn't build it. Python bindings upstream are a separate follow-up (see below). |
@@ -54,7 +54,7 @@ Dependencies that differ per distro must come out of the generator, not be patch
 - `workflow_dispatch` with `recipes: vpi,isaac-ros-common` publishes vpi to both channels and `ros-<distro>-isaac-ros-common` to its own channel.
 - A deliberate Lyrical test failure produces a warning and the run stays green. The same failure on Jazzy turns it red.
 **Tests**: The scenarios above, run on a fork or branch before merging.
-**Status**: Not Started
+**Status**: In Progress (workflow written and linted; not yet run on GitHub)
 
 ## Stage 4: Upstream and rollout
 **Goal**: Publish both distros for real.
