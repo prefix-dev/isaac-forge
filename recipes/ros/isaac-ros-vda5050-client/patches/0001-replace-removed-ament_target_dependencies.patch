@@ -1,0 +1,21 @@
+From: Isaac Forge <noreply@example.com>
+Subject: [PATCH] Replace removed ament_target_dependencies()
+
+ament_cmake 2.8.6 removed ament_target_dependencies() (ament/ament_cmake#614), so this
+no longer configures on ROS 2 Lyrical. ament_cmake_auto's
+ament_auto_depend_on_packages() is its replacement: it links ${<pkg>_TARGETS} where a
+package exports targets and falls back to <pkg>_INCLUDE_DIRS/_LIBRARIES otherwise, which
+isaac_ros_common still needs. Without SCOPE it uses the plain target_link_libraries()
+signature, matching the other calls on these targets.
+---
+--- a/isaac_ros_vda5050_client/CMakeLists.txt
++++ b/isaac_ros_vda5050_client/CMakeLists.txt
+@@ -90,7 +90,7 @@
+   ${CMAKE_CURRENT_SOURCE_DIR}/include
+ )
+ target_compile_definitions(example_action_handler PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
+-ament_target_dependencies(example_action_handler
++ament_auto_depend_on_packages(example_action_handler PACKAGES
+   ${example_handler_dependencies}
+ )
+ 

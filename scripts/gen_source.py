@@ -706,6 +706,9 @@ EXTRA_DEPS = {
     # hard-errors on a package find_package() has not located, so configure fails outright
     # rather than degrading. See ISSUES.md.
     ROS + "isaac-ros-tensor-proc": [ROS + "isaac-ros-cvcuda-utils"],
+    # CMakeLists calls find_package(ament_cmake_ros); package.xml never declares it. On
+    # Jazzy it arrived transitively, on Lyrical it does not.
+    ROS + "vda5050-action-handler-plugins": [ROS + "ament-cmake-ros"],
 }
 
 # Packages not built for a distro, with the reason. Keyed by conda package name ->
@@ -1102,14 +1105,18 @@ EXTRA_RUN = {
 # fixing is under NVIDIA's proprietary header.
 PATCHES = {
     # ament_target_dependencies() was removed from ament_cmake in 2.8.6 (Lyrical), and
-    # these still call it. Link each dependency's ${<pkg>_TARGETS} instead, as
-    # nvblox_ros already does upstream. See upstream/README.md.
-    ROS + "isaac-ros-vda5050-client": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
-    ROS + "isaac-ros-cumotion": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
-    ROS + "isaac-ros-foundationpose": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
-    ROS + "nvblox-image-padding": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
-    ROS + "nvblox-nav2": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
-    ROS + "nvblox-message-adapters": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
+    # these still call it. ament_cmake_auto's ament_auto_depend_on_packages() is the
+    # replacement: targets where a package exports them, include dirs and libraries
+    # otherwise (isaac_ros_common exports no target). See upstream/README.md.
+    ROS + "isaac-ros-vda5050-client": ["patches/0001-replace-removed-ament_target_dependencies.patch"],
+    ROS + "isaac-ros-cumotion": ["patches/0001-replace-removed-ament_target_dependencies.patch"],
+    ROS + "isaac-ros-cumotion-moveit": ["patches/0001-replace-removed-ament_target_dependencies.patch"],
+    ROS + "isaac-ros-foundationpose": ["patches/0001-replace-removed-ament_target_dependencies.patch"],
+    ROS + "nvblox-image-padding": ["patches/0001-replace-removed-ament_target_dependencies.patch"],
+    ROS + "nvblox-nav2": ["patches/0001-replace-removed-ament_target_dependencies.patch"],
+    ROS + "nvblox-message-adapters": ["patches/0001-replace-removed-ament_target_dependencies.patch"],
+    # Uses neither ament_cmake_auto nor a dependency without targets, so it links each
+    # dependency's ${<pkg>_TARGETS} directly.
     ROS + "unitree-hg-ros2-control": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
     # v5.0-0 installs a VERSION file that is not present in the release archive.
     ROS + "cuapriltags-vendor": ["patches/0001-do-not-install-missing-version-file.patch"],

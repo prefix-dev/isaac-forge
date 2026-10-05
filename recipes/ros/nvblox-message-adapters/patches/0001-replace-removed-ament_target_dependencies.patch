@@ -1,0 +1,30 @@
+From: Isaac Forge <noreply@example.com>
+Subject: [PATCH] Replace removed ament_target_dependencies()
+
+ament_cmake 2.8.6 removed ament_target_dependencies() (ament/ament_cmake#614), so this
+no longer configures on ROS 2 Lyrical. ament_cmake_auto's
+ament_auto_depend_on_packages() is its replacement: it links ${<pkg>_TARGETS} where a
+package exports targets and falls back to <pkg>_INCLUDE_DIRS/_LIBRARIES otherwise, which
+isaac_ros_common still needs. Without SCOPE it uses the plain target_link_libraries()
+signature, matching the other calls on these targets.
+---
+--- a/nvblox_message_adapters/CMakeLists.txt
++++ b/nvblox_message_adapters/CMakeLists.txt
+@@ -36,7 +36,7 @@
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include>"
+ )
+-ament_target_dependencies(nvblox_voxel_layer_adapter rclcpp isaac_ros_common nvblox_msgs)
++ament_auto_depend_on_packages(nvblox_voxel_layer_adapter PACKAGES rclcpp isaac_ros_common nvblox_msgs)
+ 
+ 
+ ######## Main executable for Mesh representation
+@@ -49,7 +49,7 @@
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include>"
+ )
+-ament_target_dependencies(nvblox_mesh_layer_adapter rclcpp isaac_ros_common nvblox_msgs)
++ament_auto_depend_on_packages(nvblox_mesh_layer_adapter PACKAGES rclcpp isaac_ros_common nvblox_msgs)
+ 
+ ######### Install & Export
+ include(GNUInstallDirs)

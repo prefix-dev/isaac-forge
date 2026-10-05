@@ -18,7 +18,7 @@ source:
     sha256: 8a5d685a0227bf545c8e07dcf248f19855ec163d82d6c92612859ef510d65d1e
     target_directory: src
     patches:
-      - patches/0001-link-targets-instead-of-ament_target_dependencies.patch
+      - patches/0001-replace-removed-ament_target_dependencies.patch
 
 build:
   number: 0

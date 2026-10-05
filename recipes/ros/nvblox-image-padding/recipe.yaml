@@ -18,7 +18,7 @@ source:
     sha256: 487bb927e1e6118908c7ab54b5d2be449f98d30481f118d231bb51069acd6f7a
     target_directory: src
     patches:
-      - patches/0001-link-targets-instead-of-ament_target_dependencies.patch
+      - patches/0001-replace-removed-ament_target_dependencies.patch
   - url: https://github.com/nvidia-isaac/nvblox/archive/24eee4948768682fa1ffb969b881efee4fca29c2.tar.gz
     sha256: b5243e56760fe1aaa4d029d71ed8dde34ee9f4ac84aa7de1c4fafcb32d27fc30
     target_directory: src/nvblox_ros/nvblox_core

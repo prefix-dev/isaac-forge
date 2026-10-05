@@ -1,0 +1,29 @@
+From: Isaac Forge <noreply@example.com>
+Subject: [PATCH] Replace removed ament_target_dependencies()
+
+ament_cmake 2.8.6 removed ament_target_dependencies() (ament/ament_cmake#614), so this
+no longer configures on ROS 2 Lyrical. ament_cmake_auto's
+ament_auto_depend_on_packages() is its replacement: it links ${<pkg>_TARGETS} where a
+package exports targets and falls back to <pkg>_INCLUDE_DIRS/_LIBRARIES otherwise, which
+isaac_ros_common still needs. Without SCOPE it uses the plain target_link_libraries()
+signature, matching the other calls on these targets.
+---
+--- a/nvblox_examples/nvblox_image_padding/CMakeLists.txt
++++ b/nvblox_examples/nvblox_image_padding/CMakeLists.txt
+@@ -22,6 +22,7 @@
+ add_compile_options(-Wall -Wextra -Wpedantic)
+ 
+ find_package(ament_cmake REQUIRED)
++find_package(ament_cmake_auto REQUIRED)
+ find_package(rclcpp REQUIRED)
+ find_package(rclcpp_components REQUIRED)
+ find_package(sensor_msgs REQUIRED)
+@@ -36,7 +37,7 @@
+ add_library(${PROJECT_NAME}_lib SHARED
+   src/image_padding_cropping_node.cpp
+ )
+-ament_target_dependencies(${PROJECT_NAME}_lib
++ament_auto_depend_on_packages(${PROJECT_NAME}_lib PACKAGES
+   rclcpp
+   rclcpp_components
+   sensor_msgs

@@ -1,0 +1,66 @@
+From: Isaac Forge <noreply@example.com>
+Subject: [PATCH] Replace removed ament_target_dependencies()
+
+ament_cmake 2.8.6 removed ament_target_dependencies() (ament/ament_cmake#614), so this
+no longer configures on ROS 2 Lyrical. ament_cmake_auto's
+ament_auto_depend_on_packages() is its replacement: it links ${<pkg>_TARGETS} where a
+package exports targets and falls back to <pkg>_INCLUDE_DIRS/_LIBRARIES otherwise, which
+isaac_ros_common still needs. Without SCOPE it uses the plain target_link_libraries()
+signature, matching the other calls on these targets.
+---
+--- a/isaac_ros_cumotion/CMakeLists.txt
++++ b/isaac_ros_cumotion/CMakeLists.txt
+@@ -73,7 +73,7 @@
+   BUILD_RPATH_USE_ORIGIN TRUE
+   INSTALL_RPATH_USE_LINK_PATH TRUE
+ )
+-ament_target_dependencies(utils
++ament_auto_depend_on_packages(utils PACKAGES
+   rclcpp
+   geometry_msgs
+   moveit_msgs
+@@ -126,7 +126,7 @@
+ ament_auto_add_library(static_planning_scene_lib SHARED
+   src/static_planning_scene.cpp
+ )
+-ament_target_dependencies(static_planning_scene_lib
++ament_auto_depend_on_packages(static_planning_scene_lib PACKAGES
+   rclcpp
+   rclcpp_components
+   geometry_msgs
+@@ -160,7 +160,7 @@
+     cumotion_impl
+     cumotion::cumotion
+   )
+-  ament_target_dependencies(test_cumotion_logger_bridge
++  ament_auto_depend_on_packages(test_cumotion_logger_bridge PACKAGES
+     rclcpp
+   )
+   set_target_properties(test_cumotion_logger_bridge PROPERTIES
+@@ -180,7 +180,7 @@
+     utils
+     cumotion::cumotion
+   )
+-  ament_target_dependencies(test_robot_manager_impl
++  ament_auto_depend_on_packages(test_robot_manager_impl PACKAGES
+     rclcpp
+   )
+   set_target_properties(test_robot_manager_impl PROPERTIES
+@@ -203,7 +203,7 @@
+     utils
+     cumotion::cumotion
+   )
+-  ament_target_dependencies(test_trajectory_optimizer_impl
++  ament_auto_depend_on_packages(test_trajectory_optimizer_impl PACKAGES
+     rclcpp
+     ament_index_cpp # Added to be able to use ament_index_cpp::get_package_share_directory().
+   )
+@@ -252,7 +252,7 @@
+     utils
+     cumotion::cumotion
+   )
+-  ament_target_dependencies(test_world_manager_impl
++  ament_auto_depend_on_packages(test_world_manager_impl PACKAGES
+     rclcpp
+     geometry_msgs
+     nvblox_msgs

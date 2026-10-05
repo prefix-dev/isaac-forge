@@ -1,48 +1,46 @@
 From: Isaac Forge <noreply@example.com>
-Subject: [PATCH] Link targets instead of ament_target_dependencies()
+Subject: [PATCH] Replace removed ament_target_dependencies()
 
-ament_target_dependencies() was removed from ament_cmake in 2.8.6 (ament/ament_cmake#614),
-so this no longer configures on ROS 2 Lyrical. Link each dependency's exported
-${<pkg>_TARGETS} instead, as nvblox_ros already does. Plain signature, matching the
-other target_link_libraries() calls on these targets.
+ament_cmake 2.8.6 removed ament_target_dependencies() (ament/ament_cmake#614), so this
+no longer configures on ROS 2 Lyrical. ament_cmake_auto's
+ament_auto_depend_on_packages() is its replacement: it links ${<pkg>_TARGETS} where a
+package exports targets and falls back to <pkg>_INCLUDE_DIRS/_LIBRARIES otherwise, which
+isaac_ros_common still needs. Without SCOPE it uses the plain target_link_libraries()
+signature, matching the other calls on these targets.
 ---
 --- a/isaac_ros_foundationpose/CMakeLists.txt
 +++ b/isaac_ros_foundationpose/CMakeLists.txt
-@@ -97,7 +97,8 @@
+@@ -97,7 +97,7 @@
  
  # FoundationPose node
  ament_auto_add_library(foundationpose_node SHARED src/foundationpose_node.cpp)
 -ament_target_dependencies(foundationpose_node rclcpp_components)
-+target_link_libraries(foundationpose_node
-+  ${rclcpp_components_TARGETS})
++ament_auto_depend_on_packages(foundationpose_node PACKAGES rclcpp_components)
  target_link_libraries(foundationpose_node foundationpose_pipeline CUDA::cudart)
  target_link_libraries(foundationpose_node "${cpp_typesupport_target}")
  rclcpp_components_register_nodes(foundationpose_node "nvidia::isaac_ros::foundationpose::FoundationPoseNode")
-@@ -111,7 +112,8 @@
+@@ -111,7 +111,7 @@
  
  # FoundationPose Tracking node
  ament_auto_add_library(foundationpose_tracking_node SHARED src/foundationpose_tracking_node.cpp)
 -ament_target_dependencies(foundationpose_tracking_node rclcpp_components)
-+target_link_libraries(foundationpose_tracking_node
-+  ${rclcpp_components_TARGETS})
++ament_auto_depend_on_packages(foundationpose_tracking_node PACKAGES rclcpp_components)
  target_link_libraries(foundationpose_tracking_node foundationpose_pipeline CUDA::cudart)
  target_link_libraries(foundationpose_tracking_node "${cpp_typesupport_target}")
  rclcpp_components_register_nodes(foundationpose_tracking_node "nvidia::isaac_ros::foundationpose::FoundationPoseTrackingNode")
-@@ -120,20 +122,23 @@
+@@ -120,20 +120,20 @@
  
  # Detection2DArrayFilter utils node
  ament_auto_add_library(detection2_d_array_filter SHARED src/detection2_d_array_filter.cpp)
 -ament_target_dependencies(detection2_d_array_filter rclcpp_components)
-+target_link_libraries(detection2_d_array_filter
-+  ${rclcpp_components_TARGETS})
++ament_auto_depend_on_packages(detection2_d_array_filter PACKAGES rclcpp_components)
  rclcpp_components_register_nodes(detection2_d_array_filter "nvidia::isaac_ros::foundationpose::Detection2DArrayFilter")
  set(node_plugins "${node_plugins}nvidia::isaac_ros::foundationpose::Detection2DArrayFilter;$<TARGET_FILE:detection2_d_array_filter>\n")
  
  # Detection2DToMask utils node
  ament_auto_add_library(detection2_d_to_mask SHARED src/detection2_d_to_mask.cpp)
 -ament_target_dependencies(detection2_d_to_mask rclcpp_components)
-+target_link_libraries(detection2_d_to_mask
-+  ${rclcpp_components_TARGETS})
++ament_auto_depend_on_packages(detection2_d_to_mask PACKAGES rclcpp_components)
  target_link_libraries(detection2_d_to_mask CUDA::cudart)
  rclcpp_components_register_nodes(detection2_d_to_mask "nvidia::isaac_ros::foundationpose::Detection2DToMask")
  set(node_plugins "${node_plugins}nvidia::isaac_ros::foundationpose::Detection2DToMask;$<TARGET_FILE:detection2_d_to_mask>\n")
@@ -50,8 +48,7 @@ other target_link_libraries() calls on these targets.
  # Tracking selector node
  ament_auto_add_library(foundationpose_selector_node SHARED src/foundationpose_selector_node.cpp)
 -ament_target_dependencies(foundationpose_selector_node rclcpp_components)
-+target_link_libraries(foundationpose_selector_node
-+  ${rclcpp_components_TARGETS})
++ament_auto_depend_on_packages(foundationpose_selector_node PACKAGES rclcpp_components)
  rclcpp_components_register_nodes(foundationpose_selector_node "nvidia::isaac_ros::foundationpose::Selector")
  set(node_plugins "${node_plugins}nvidia::isaac_ros::foundationpose::Selector;$<TARGET_FILE:foundationpose_selector_node>\n")
  

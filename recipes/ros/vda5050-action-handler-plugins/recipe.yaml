@@ -88,6 +88,7 @@ requirements:
     - libcurl
     - nlohmann_json
     - ros-${{ ros_distro }}-ament-cmake-auto
+    - ros-${{ ros_distro }}-ament-cmake-ros
     - ros-${{ ros_distro }}-geometry-msgs
     - ros-${{ ros_distro }}-isaac-ros-apriltag-interfaces
     - ros-${{ ros_distro }}-isaac-ros-cloud-control-interface
