@@ -711,6 +711,11 @@ DROP_DEPS = {
     # still leaves an unbuildable run dep. The decoder does not load them; the launch file
     # composes them as separate nodes, so installing them alongside once TensorRT exists is
     # all that is needed.
+    # flexiv_msgs is in neither RoboStack distro. Only the Flexiv hardware scripts import
+    # it; the Isaac Sim variant of the reference application runs without it.
+    "ros-jazzy-isaac-ros-deploy-reference-applications": {
+        "flexiv_msgs": "not in RoboStack; only the Flexiv hardware scripts use it",
+    },
     "ros-jazzy-isaac-ros-dope": {
         "isaac_ros_tensor_rt": "needs TensorRT; a separate node in the launch graph",
     },

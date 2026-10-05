@@ -84,7 +84,6 @@ requirements:
     - pyyaml
     - ros-jazzy-ament-cmake
     - ros-jazzy-controller-manager
-    - ros-jazzy-flexiv-msgs
     - ros-jazzy-geometry-msgs
     - ros-jazzy-isaac-ros-cumotion-robot-description
     - ros-jazzy-isaac-ros-deploy-converters
@@ -101,7 +100,6 @@ requirements:
     - __glibc >=2.38
     - pyyaml
     - ros-jazzy-controller-manager
-    - ros-jazzy-flexiv-msgs
     - ros-jazzy-geometry-msgs
     - ros-jazzy-isaac-ros-cumotion-robot-description
     - ros-jazzy-isaac-ros-deploy-converters

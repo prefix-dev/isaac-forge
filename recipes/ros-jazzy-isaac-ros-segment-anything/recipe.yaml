@@ -82,6 +82,7 @@ requirements:
     - ninja
     - pkg-config
   host:
+    - pip
     - py-opencv
     - pytorch-gpu ==2.13.0 cuda130_generic_*_202
     - ros-jazzy-ament-cmake
@@ -108,6 +109,7 @@ requirements:
     - pyyaml
   run:
     - __glibc >=2.38
+    - pip
     - py-opencv
     - pytorch-gpu ==2.13.0 cuda130_generic_*_202
     - ros-jazzy-ament-index-cpp
