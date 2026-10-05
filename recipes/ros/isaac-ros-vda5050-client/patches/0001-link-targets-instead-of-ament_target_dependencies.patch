@@ -1,0 +1,23 @@
+From: Isaac Forge <noreply@example.com>
+Subject: [PATCH] Link targets instead of ament_target_dependencies()
+
+ament_target_dependencies() was removed from ament_cmake in 2.8.6 (ament/ament_cmake#614),
+so this no longer configures on ROS 2 Lyrical. Link each dependency's exported
+${<pkg>_TARGETS} instead, as nvblox_ros already does. Plain signature, matching the
+other target_link_libraries() calls on these targets.
+---
+--- a/isaac_ros_vda5050_client/CMakeLists.txt
++++ b/isaac_ros_vda5050_client/CMakeLists.txt
+@@ -90,9 +90,9 @@
+   ${CMAKE_CURRENT_SOURCE_DIR}/include
+ )
+ target_compile_definitions(example_action_handler PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
+-ament_target_dependencies(example_action_handler
+-  ${example_handler_dependencies}
+-)
++foreach(_dep IN LISTS example_handler_dependencies)
++  target_link_libraries(example_action_handler ${${_dep}_TARGETS})
++endforeach()
+ 
+ install(TARGETS vda5050_client_node example_action_handler
+   ARCHIVE DESTINATION lib

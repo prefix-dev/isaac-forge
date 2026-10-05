@@ -14,8 +14,8 @@ package:
   version: ${{ version }}
 
 source:
-  - url: https://github.com/PickNikRobotics/topic_based_ros2_control/archive/6bd8d55e1c4ad3188770fe5c8b93b942bcede4a2.tar.gz
-    sha256: 32168384d0913bd052533289b3d3b9a330ba47055d613f771a7697d6f65c214c
+  - url: https://github.com/PickNikRobotics/topic_based_ros2_control/archive/ade979695f0dc60943ed1da324ed8d8a2cbc9899.tar.gz
+    sha256: 092fce0141c3fff259d9854a77a0a531463ac964b96edd68754af01949ff27bd
     target_directory: src
 
 build:

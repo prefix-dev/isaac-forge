@@ -1,0 +1,34 @@
+From: Isaac Forge <noreply@example.com>
+Subject: [PATCH] Link targets instead of ament_target_dependencies()
+
+ament_target_dependencies() was removed from ament_cmake in 2.8.6 (ament/ament_cmake#614),
+so this no longer configures on ROS 2 Lyrical. Link each dependency's exported
+${<pkg>_TARGETS} instead, as nvblox_ros already does. Plain signature, matching the
+other target_link_libraries() calls on these targets.
+---
+--- a/nvblox_message_adapters/CMakeLists.txt
++++ b/nvblox_message_adapters/CMakeLists.txt
+@@ -36,7 +36,10 @@
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include>"
+ )
+-ament_target_dependencies(nvblox_voxel_layer_adapter rclcpp isaac_ros_common nvblox_msgs)
++target_link_libraries(nvblox_voxel_layer_adapter
++  ${rclcpp_TARGETS}
++  ${isaac_ros_common_TARGETS}
++  ${nvblox_msgs_TARGETS})
+ 
+ 
+ ######## Main executable for Mesh representation
+@@ -49,7 +52,10 @@
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include>"
+ )
+-ament_target_dependencies(nvblox_mesh_layer_adapter rclcpp isaac_ros_common nvblox_msgs)
++target_link_libraries(nvblox_mesh_layer_adapter
++  ${rclcpp_TARGETS}
++  ${isaac_ros_common_TARGETS}
++  ${nvblox_msgs_TARGETS})
+ 
+ ######### Install & Export
+ include(GNUInstallDirs)

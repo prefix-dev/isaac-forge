@@ -17,6 +17,8 @@ source:
   - url: https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_robots/archive/refs/tags/v5.0-0.tar.gz
     sha256: e7fe907bcfccb32a2c0c253c3b76cf01b81c2c5885e4369bc37c4df0b646843c
     target_directory: src
+    patches:
+      - patches/0001-link-targets-instead-of-ament_target_dependencies.patch
 
 build:
   number: 0

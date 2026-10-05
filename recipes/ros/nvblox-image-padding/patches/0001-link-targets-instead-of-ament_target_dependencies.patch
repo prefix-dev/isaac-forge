@@ -1,0 +1,32 @@
+From: Isaac Forge <noreply@example.com>
+Subject: [PATCH] Link targets instead of ament_target_dependencies()
+
+ament_target_dependencies() was removed from ament_cmake in 2.8.6 (ament/ament_cmake#614),
+so this no longer configures on ROS 2 Lyrical. Link each dependency's exported
+${<pkg>_TARGETS} instead, as nvblox_ros already does. Plain signature, matching the
+other target_link_libraries() calls on these targets.
+---
+--- a/nvblox_examples/nvblox_image_padding/CMakeLists.txt
++++ b/nvblox_examples/nvblox_image_padding/CMakeLists.txt
+@@ -36,14 +36,13 @@
+ add_library(${PROJECT_NAME}_lib SHARED
+   src/image_padding_cropping_node.cpp
+ )
+-ament_target_dependencies(${PROJECT_NAME}_lib
+-  rclcpp
+-  rclcpp_components
+-  sensor_msgs
+-  cv_bridge
+-  nvblox_ros_common
+-  isaac_ros_common
+-)
++target_link_libraries(${PROJECT_NAME}_lib
++  ${rclcpp_TARGETS}
++  ${rclcpp_components_TARGETS}
++  ${sensor_msgs_TARGETS}
++  ${cv_bridge_TARGETS}
++  ${nvblox_ros_common_TARGETS}
++  ${isaac_ros_common_TARGETS})
+ target_include_directories(${PROJECT_NAME}_lib PUBLIC
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   $<INSTALL_INTERFACE:include>)

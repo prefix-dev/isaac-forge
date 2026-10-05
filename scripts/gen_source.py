@@ -191,12 +191,13 @@ REPOS = {
         sha256="3e96da843c611878e28148ce113d978e5464dec922fc06dcd8c340f8232a6883",
         homepage="https://github.com/unitreerobotics/unitree_ros2"),
     # Not NVIDIA's, and not in RoboStack either -- see the note on
-    # ros-jazzy-topic-based-ros2-control below. Pinned to a commit because there is no
-    # jazzy release to pin to.
+    # ros-<distro>-topic-based-ros2-control below. Pinned to a commit because there is no
+    # release to pin to; this one is PickNik's "support current ROS distributions" (#45),
+    # which replaces ament_target_dependencies(), removed in Lyrical's ament_cmake.
     "topic_based_ros2_control": dict(
         url="https://github.com/PickNikRobotics/topic_based_ros2_control/archive/"
-            "6bd8d55e1c4ad3188770fe5c8b93b942bcede4a2.tar.gz",
-        sha256="32168384d0913bd052533289b3d3b9a330ba47055d613f771a7697d6f65c214c",
+            "ade979695f0dc60943ed1da324ed8d8a2cbc9899.tar.gz",
+        sha256="092fce0141c3fff259d9854a77a0a531463ac964b96edd68754af01949ff27bd",
         homepage="https://github.com/PickNikRobotics/topic_based_ros2_control"),
 }
 
@@ -1100,6 +1101,16 @@ EXTRA_RUN = {
 # its own commit message, and the reason it cannot go upstream is that the code that needs
 # fixing is under NVIDIA's proprietary header.
 PATCHES = {
+    # ament_target_dependencies() was removed from ament_cmake in 2.8.6 (Lyrical), and
+    # these still call it. Link each dependency's ${<pkg>_TARGETS} instead, as
+    # nvblox_ros already does upstream. See upstream/README.md.
+    ROS + "isaac-ros-vda5050-client": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
+    ROS + "isaac-ros-cumotion": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
+    ROS + "isaac-ros-foundationpose": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
+    ROS + "nvblox-image-padding": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
+    ROS + "nvblox-nav2": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
+    ROS + "nvblox-message-adapters": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
+    ROS + "unitree-hg-ros2-control": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
     # v5.0-0 installs a VERSION file that is not present in the release archive.
     ROS + "cuapriltags-vendor": ["patches/0001-do-not-install-missing-version-file.patch"],
     # Explicit specializations of a variable template are not implicitly inline, so

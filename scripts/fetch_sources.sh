@@ -75,5 +75,5 @@ fetch negotiated "https://github.com/osrf/negotiated/archive/eac198b55dcd052af59
 # (ISSUES.md #15), so it is pinned to a commit. robotiq_controllers used to be here too and
 # is now in robostack-jazzy, so it is gone.
 fetch topic_based_ros2_control \
-  "https://github.com/PickNikRobotics/topic_based_ros2_control/archive/6bd8d55e1c4ad3188770fe5c8b93b942bcede4a2.tar.gz"
+  "https://github.com/PickNikRobotics/topic_based_ros2_control/archive/ade979695f0dc60943ed1da324ed8d8a2cbc9899.tar.gz"
 echo "  cache: $(du -sh "${CACHE}" | cut -f1)"

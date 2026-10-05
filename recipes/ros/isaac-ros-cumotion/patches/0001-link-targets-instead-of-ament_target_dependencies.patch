@@ -1,0 +1,110 @@
+From: Isaac Forge <noreply@example.com>
+Subject: [PATCH] Link targets instead of ament_target_dependencies()
+
+ament_target_dependencies() was removed from ament_cmake in 2.8.6 (ament/ament_cmake#614),
+so this no longer configures on ROS 2 Lyrical. Link each dependency's exported
+${<pkg>_TARGETS} instead, as nvblox_ros already does. Plain signature, matching the
+other target_link_libraries() calls on these targets.
+---
+--- a/isaac_ros_cumotion/CMakeLists.txt
++++ b/isaac_ros_cumotion/CMakeLists.txt
+@@ -73,15 +73,14 @@
+   BUILD_RPATH_USE_ORIGIN TRUE
+   INSTALL_RPATH_USE_LINK_PATH TRUE
+ )
+-ament_target_dependencies(utils
+-  rclcpp
+-  geometry_msgs
+-  moveit_msgs
+-  sensor_msgs
+-  shape_msgs
+-  trajectory_msgs
+-  visualization_msgs
+-)
++target_link_libraries(utils
++  ${rclcpp_TARGETS}
++  ${geometry_msgs_TARGETS}
++  ${moveit_msgs_TARGETS}
++  ${sensor_msgs_TARGETS}
++  ${shape_msgs_TARGETS}
++  ${trajectory_msgs_TARGETS}
++  ${visualization_msgs_TARGETS})
+ 
+ # Isaac ROS cuMotion implementation library.
+ ament_auto_add_library(cumotion_impl SHARED
+@@ -126,14 +125,13 @@
+ ament_auto_add_library(static_planning_scene_lib SHARED
+   src/static_planning_scene.cpp
+ )
+-ament_target_dependencies(static_planning_scene_lib
+-  rclcpp
+-  rclcpp_components
+-  geometry_msgs
+-  moveit_msgs
+-  shape_msgs
+-  isaac_ros_cumotion_interfaces
+-)
++target_link_libraries(static_planning_scene_lib
++  ${rclcpp_TARGETS}
++  ${rclcpp_components_TARGETS}
++  ${geometry_msgs_TARGETS}
++  ${moveit_msgs_TARGETS}
++  ${shape_msgs_TARGETS}
++  ${isaac_ros_cumotion_interfaces_TARGETS})
+ target_link_libraries(static_planning_scene_lib
+   utils
+ )
+@@ -160,9 +158,8 @@
+     cumotion_impl
+     cumotion::cumotion
+   )
+-  ament_target_dependencies(test_cumotion_logger_bridge
+-    rclcpp
+-  )
++  target_link_libraries(test_cumotion_logger_bridge
++    ${rclcpp_TARGETS})
+   set_target_properties(test_cumotion_logger_bridge PROPERTIES
+     BUILD_WITH_INSTALL_RPATH TRUE
+     BUILD_RPATH_USE_ORIGIN TRUE
+@@ -180,9 +177,8 @@
+     utils
+     cumotion::cumotion
+   )
+-  ament_target_dependencies(test_robot_manager_impl
+-    rclcpp
+-  )
++  target_link_libraries(test_robot_manager_impl
++    ${rclcpp_TARGETS})
+   set_target_properties(test_robot_manager_impl PROPERTIES
+     BUILD_WITH_INSTALL_RPATH TRUE
+     BUILD_RPATH_USE_ORIGIN TRUE
+@@ -203,10 +199,9 @@
+     utils
+     cumotion::cumotion
+   )
+-  ament_target_dependencies(test_trajectory_optimizer_impl
+-    rclcpp
+-    ament_index_cpp # Added to be able to use ament_index_cpp::get_package_share_directory().
+-  )
++  target_link_libraries(test_trajectory_optimizer_impl
++    ${rclcpp_TARGETS}
++    ${ament_index_cpp_TARGETS})  # Added to be able to use ament_index_cpp::get_package_share_directory().
+   set_target_properties(test_trajectory_optimizer_impl PROPERTIES
+     BUILD_WITH_INSTALL_RPATH TRUE
+     BUILD_RPATH_USE_ORIGIN TRUE
+@@ -252,11 +247,10 @@
+     utils
+     cumotion::cumotion
+   )
+-  ament_target_dependencies(test_world_manager_impl
+-    rclcpp
+-    geometry_msgs
+-    nvblox_msgs
+-  )
++  target_link_libraries(test_world_manager_impl
++    ${rclcpp_TARGETS}
++    ${geometry_msgs_TARGETS}
++    ${nvblox_msgs_TARGETS})
+   set_target_properties(test_world_manager_impl PROPERTIES
+     BUILD_WITH_INSTALL_RPATH TRUE
+     BUILD_RPATH_USE_ORIGIN TRUE
