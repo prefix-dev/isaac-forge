@@ -10,7 +10,7 @@
 #   DISTRO    a ROS distro with a variants-<distro>.yaml; selects isaac-forge/<distro> and
 #             robostack-<distro>
 #   STRICT    true: failures fail the job (after publishing what passed). false: they are
-#             reported as warnings, for a distro or platform that is still being brought up.
+#             only reported as warnings.
 #
 # Packages that failed their tests are moved to failed-packages/, never published.
 set -euo pipefail

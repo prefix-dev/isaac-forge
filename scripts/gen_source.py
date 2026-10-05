@@ -727,6 +727,33 @@ SKIP = {
         "lyrical": "needs isaac_ros_cumotion_examples, skipped on Lyrical"},
     ROS + "isaac-ros-ur5-cumotion-benchmark": {
         "lyrical": "needs isaac_ros_cumotion_examples, skipped on Lyrical"},
+    # Known Lyrical build failures, and the packages that need them. CI fails on any
+    # package that does not build or pass its tests, so a failure is either fixed or
+    # listed here with its reason; remove an entry as soon as it builds.
+    ROS + "isaac-ros-cumotion-controllers": {
+        "lyrical": "Lyrical's realtime_tools deprecates realtime_buffer.hpp and changed RealtimeBuffer"},
+    ROS + "unitree-g1-bringup": {
+        "lyrical": "needs isaac_ros_cumotion_controllers, skipped on Lyrical"},
+    ROS + "isaac-ros-deploy-ros2-control": {
+        "lyrical": "Lyrical's realtime_tools deprecates realtime_buffer.hpp and changed RealtimeBuffer"},
+    ROS + "isaac-ros-deploy": {
+        "lyrical": "needs isaac_ros_deploy_ros2_control, skipped on Lyrical"},
+    ROS + "isaac-ros-deploy-reference-applications": {
+        "lyrical": "needs isaac_ros_deploy_ros2_control, skipped on Lyrical"},
+    ROS + "isaac-ros-cuvslam": {
+        "lyrical": "the v5.0-0 release tarball lacks the cuvslam submodule"},
+    ROS + "nvblox-examples-bringup": {
+        "lyrical": "needs isaac_ros_cuvslam, skipped on Lyrical"},
+    ROS + "isaac-ros-nvblox": {
+        "lyrical": "needs isaac_ros_cuvslam, skipped on Lyrical"},
+    ROS + "nvblox-ros": {
+        "lyrical": "nvcc 13.4: mesh_integrator_appearance.cu(84): type name is not allowed"},
+    # Builds and tests on Python 3.14 (see EXTRA_PREP), but needs dex-retargeting
+    # 0.5.0-pyh5ded981_1 (no <3.13 cap), merged on conda-forge and not yet in its index.
+    ROS + "isaac-teleop-core": {
+        "lyrical": "needs dex-retargeting 0.5.0 build 1, not yet in conda-forge's index"},
+    ROS + "isaac-ros-teleop": {
+        "lyrical": "needs isaac_teleop_core, skipped on Lyrical"},
 }
 
 # Declared dependencies deliberately left out, with the reason. Keyed by conda package

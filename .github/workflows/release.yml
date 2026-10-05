@@ -122,18 +122,17 @@ jobs:
             runner: ubuntu-24.04
           - platform: linux-aarch64
             runner: ubuntu-24.04-arm
-          # Lyrical is still being brought up: its failures are warnings, so main stays
-          # green while it catches up. Set to true once it reaches parity.
+          # Any package that fails to build or test fails the job. Known failures are
+          # skipped explicitly in the recipes (SKIP in scripts/gen_source.py) with the
+          # reason, so a red build always means something new broke.
           - distro: lyrical
-            strict: false
+            strict: true
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 720
     env:
       PLATFORM: ${{ matrix.platform }}
       DISTRO: ${{ matrix.distro }}
-      # ARM64 quarantines test failures as warnings: during bootstrap some leaf packages
-      # compile before their run closure exists.
-      STRICT: ${{ matrix.strict && matrix.platform == 'linux-64' }}
+      STRICT: ${{ matrix.strict }}
     steps:
       - uses: actions/checkout@v7
 

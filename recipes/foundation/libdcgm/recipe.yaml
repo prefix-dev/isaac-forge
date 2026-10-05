@@ -13,7 +13,11 @@ source:
 
 build:
   number: 0
-  skip: not linux
+  skip:
+    - not linux
+    # conda-forge has no tclap for linux-aarch64, and this was never built there.
+    # Triton does not link it (see its test), so nothing on aarch64 needs it.
+    - target_platform == "linux-aarch64"
   script: build.sh
   dynamic_linking:
     missing_dso_allowlist:

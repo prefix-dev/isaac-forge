@@ -23,6 +23,9 @@ source:
 
 build:
   number: 0
+  skip:
+    # needs dex-retargeting 0.5.0 build 1, not yet in conda-forge's index
+    - ros_distro == "lyrical"
   script:
     - export AMENT_PREFIX_PATH="${PREFIX}${AMENT_PREFIX_PATH:+:${AMENT_PREFIX_PATH}}"
     - export CMAKE_PREFIX_PATH="${PREFIX}${CMAKE_PREFIX_PATH:+:${CMAKE_PREFIX_PATH}}"

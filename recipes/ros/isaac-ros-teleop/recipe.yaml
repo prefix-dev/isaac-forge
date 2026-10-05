@@ -22,6 +22,9 @@ source:
 
 build:
   number: 0
+  skip:
+    # needs isaac_teleop_core, skipped on Lyrical
+    - ros_distro == "lyrical"
   script:
     - export AMENT_PREFIX_PATH="${PREFIX}${AMENT_PREFIX_PATH:+:${AMENT_PREFIX_PATH}}"
     - export CMAKE_PREFIX_PATH="${PREFIX}${CMAKE_PREFIX_PATH:+:${CMAKE_PREFIX_PATH}}"
