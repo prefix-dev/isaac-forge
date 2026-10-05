@@ -99,10 +99,19 @@ git clone https://github.com/wolfv/isaac-forge.git
 cd isaac-forge
 pixi install
 
-pixi run build                                  # resumable full build
-pixi run build -- --recipe ros-jazzy-isaac-ros-nitros
+pixi run build                                  # resumable full build for Jazzy
+pixi run build -- --recipe isaac-ros-nitros
 pixi run test                                   # test packages in clean environments
+
+pixi run build -- --distro lyrical              # the same for ROS 2 Lyrical
+pixi run test -- --distro lyrical
+pixi run render                                 # check recipes for both distros, no build
 ```
+
+Every recipe in `recipes/ros/` builds for both distros: `variants-jazzy.yaml` and
+`variants-lyrical.yaml` set `ros_distro`, which names the packages `ros-jazzy-*` or
+`ros-lyrical-*`, and the Python that distro's RoboStack uses. The NVIDIA packages in
+`recipes/foundation/` do not depend on the distro, so one build serves both.
 
 Packages are written to `output/linux-64/`, `output/linux-aarch64/`, and `output/noarch/`.
 Builds and tests are separate because a package's test environment may need another package
@@ -112,7 +121,7 @@ CUDA packages should be built and tested on the target architecture. On a native
 other ARM64 machine:
 
 ```bash
-pixi run arm64-render
+pixi run render
 pixi run build -- --target linux-aarch64
 pixi run test
 ```
@@ -156,13 +165,16 @@ work behind the recipes. Upstream problems and proposed fixes are collected in
 ## Repository layout
 
 ```text
-recipes/                 rattler-build recipes
+recipes/foundation/      NVIDIA packages, built once for every ROS distro
+recipes/ros/             ROS packages, built per distro as ros-<distro>-*
 scripts/build_all.sh     resumable build driver
 scripts/test_all.sh      clean-environment package tests
 scripts/gen_source.py    source-recipe generator
+scripts/test_variants.py checks the recipes render correctly for every distro
 scripts/gen_repack.py    vendor-package recipe generator
 packages.json            generated Isaac ROS package inventory
-variants.yaml            shared CUDA, Python, and compiler pins
+variants.yaml            shared CUDA and compiler pins
+variants-<distro>.yaml   ros_distro and Python per ROS distro
 yolo/                    YOLOv8 inference example for x86_64 and Jetson/ARM64
 output/                  local package channel (gitignored)
 ```

@@ -45,7 +45,7 @@ Dependencies that differ per distro must come out of the generator, not be patch
 **Goal**: `scripts/build_all.sh` and `scripts/test_all.sh` take `--distro jazzy|lyrical` (default jazzy). They pick the matching variant file and channels, and build `recipes/foundation` before `recipes/ros`. Update the pixi tasks and README build docs.
 **Success Criteria**: `pixi run build --distro lyrical --recipe vpi` and `--recipe isaac-ros-common` build and test locally on linux-64.
 **Tests**: `test_variants.py` is run by a pixi task; build `isaac-ros-common` locally for both distros.
-**Status**: Not Started
+**Status**: In Progress (scripts done and dry-run checked; real linux-64 build pending a Linux machine)
 
 ## Stage 3: Two-stage release.yml
 **Goal**: The CI layout described above, with PR mode, per-distro `strict`, upload of foundations to both channels and ROS packages to `isaac-forge/<distro>`. Delete `lyrical-pr.yml`. `id-token: write` only on jobs that upload.

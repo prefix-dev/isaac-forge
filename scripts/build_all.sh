@@ -6,10 +6,16 @@
 # `layer0` pixi task -- the obvious candidate -- passes no channels, so it cannot resolve
 # ros-jazzy-isaac-ros-common and fails on the second recipe it reaches.
 #
-#     ./scripts/build_all.sh                         # native platform, resumable
+#     ./scripts/build_all.sh                         # Jazzy, native platform, resumable
+#     ./scripts/build_all.sh --distro lyrical        # ROS 2 Lyrical instead
 #     ./scripts/build_all.sh --target linux-aarch64  # explicit ARM64 target
 #     ./scripts/build_all.sh --recipe vpi             # build one recipe
 #     ./scripts/build_all.sh --fresh                   # discard output first
+#
+# recipes/foundation is built first, with variants.yaml alone: those packages do not depend
+# on the ROS distro, so one build serves both. recipes/ros follows with
+# variants-<distro>.yaml on top. Both distros can share output/: every ROS package name
+# carries its distro.
 #
 # Three flags carry the design, and each was learned the hard way:
 #
@@ -40,21 +46,30 @@ case "$(uname -m)" in
 esac
 
 TARGET_PLATFORM="${ISAAC_FORGE_TARGET_PLATFORM:-${NATIVE_PLATFORM}}"
+DISTRO="${ISAAC_FORGE_DISTRO:-jazzy}"
 FRESH=false
-RECIPE_ARGS=(--recipe-dir recipes)
+STAGES=(foundation ros)
+RECIPE=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --fresh) FRESH=true; shift ;;
     --target)
       [ "$#" -ge 2 ] || { echo "--target requires linux-64 or linux-aarch64" >&2; exit 2; }
       TARGET_PLATFORM="$2"; shift 2 ;;
+    --distro)
+      [ "$#" -ge 2 ] || { echo "--distro requires jazzy or lyrical" >&2; exit 2; }
+      DISTRO="$2"; shift 2 ;;
     --recipe)
       [ "$#" -ge 2 ] || { echo "--recipe requires a recipe directory name" >&2; exit 2; }
       [[ "$2" =~ ^[a-z0-9][a-z0-9._-]*$ ]] || { echo "invalid recipe name: $2" >&2; exit 2; }
-      [ -f "recipes/$2/recipe.yaml" ] || { echo "recipe not found: recipes/$2/recipe.yaml" >&2; exit 2; }
-      RECIPE_ARGS=(--recipe "recipes/$2/recipe.yaml"); shift 2 ;;
+      if [ -f "recipes/foundation/$2/recipe.yaml" ]; then STAGES=(foundation)
+      elif [ -f "recipes/ros/$2/recipe.yaml" ]; then STAGES=(ros)
+      else echo "recipe not found: recipes/{foundation,ros}/$2/recipe.yaml" >&2; exit 2
+      fi
+      RECIPE="$2"; shift 2 ;;
     -h|--help)
-      echo "usage: $0 [--fresh] [--target linux-64|linux-aarch64] [--recipe NAME]"; exit 0 ;;
+      echo "usage: $0 [--fresh] [--distro jazzy|lyrical] [--target linux-64|linux-aarch64] [--recipe NAME]"
+      exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -62,6 +77,7 @@ case "${TARGET_PLATFORM}" in
   linux-64|linux-aarch64) ;;
   *) echo "unsupported target platform: ${TARGET_PLATFORM}" >&2; exit 2 ;;
 esac
+[ -f "variants-${DISTRO}.yaml" ] || { echo "unknown distro: ${DISTRO}" >&2; exit 2; }
 
 if [ "${FRESH}" = true ]; then
   echo "removing output/ and starting over"
@@ -69,12 +85,27 @@ if [ "${FRESH}" = true ]; then
 fi
 mkdir -p output
 
-echo "building for ${TARGET_PLATFORM} on ${NATIVE_PLATFORM}"
+echo "building ${DISTRO} for ${TARGET_PLATFORM} on ${NATIVE_PLATFORM}"
 if [ "${TARGET_PLATFORM}" != "${NATIVE_PLATFORM}" ]; then
   echo "warning: CUDA recipes are intended for native builds; cross-builds are useful for rendering/auditing only" >&2
 fi
 
-CHANNELS=(-c ./output -c https://prefix.dev/isaac-forge -c https://prefix.dev/robostack-jazzy -c conda-forge)
+CHANNELS=(-c ./output -c "https://prefix.dev/isaac-forge/${DISTRO}"
+          -c "https://prefix.dev/robostack-${DISTRO}" -c conda-forge)
+
+# The recipes and variant files one stage builds with.
+stage_args() {
+  local stage="$1"
+  if [ -n "${RECIPE}" ]; then
+    printf '%s ' --recipe "recipes/${stage}/${RECIPE}/recipe.yaml"
+  else
+    printf '%s ' --recipe-dir "recipes/${stage}"
+  fi
+  printf '%s ' -m variants.yaml
+  if [ "${stage}" = ros ]; then
+    printf '%s ' -m "variants-${DISTRO}.yaml"
+  fi
+}
 
 prune_finished() {
   local freed=0
@@ -99,16 +130,19 @@ total_before=0
 for pass in 1 2 3 4; do
   before=$(find "output/${TARGET_PLATFORM}" output/noarch -maxdepth 1 -name '*.conda' -type f 2>/dev/null | wc -l)
   echo "=== pass ${pass} (${before} packages present) ==="
-  rattler-build build \
-    "${RECIPE_ARGS[@]}" \
-    --output-dir output \
-    --target-platform "${TARGET_PLATFORM}" \
-    -m variants.yaml \
-    --skip-existing local \
-    --test skip \
-    --continue-on-failure \
-    "${CHANNELS[@]}" 2>&1 | tee "output/build-pass${pass}.log"
-  prune_finished
+  : > "output/build-pass${pass}.log"
+  for stage in "${STAGES[@]}"; do
+    read -r -a args <<< "$(stage_args "${stage}")"
+    rattler-build build \
+      "${args[@]}" \
+      --output-dir output \
+      --target-platform "${TARGET_PLATFORM}" \
+      --skip-existing local \
+      --test skip \
+      --continue-on-failure \
+      "${CHANNELS[@]}" 2>&1 | tee -a "output/build-pass${pass}.log"
+    prune_finished
+  done
   after=$(find "output/${TARGET_PLATFORM}" output/noarch -maxdepth 1 -name '*.conda' -type f 2>/dev/null | wc -l)
   echo "=== pass ${pass} finished: ${before} -> ${after} packages ==="
   if [ "${after}" = "${before}" ]; then
@@ -128,4 +162,4 @@ if [ -n "${failed}" ]; then
   echo "failed:"
   printf '  %s\n' ${failed}
 fi
-echo "run ./scripts/test_all.sh next -- this script skipped every package test"
+echo "run ./scripts/test_all.sh --distro ${DISTRO} next -- this script skipped every package test"
