@@ -23,8 +23,8 @@ on:
       recipes:
         description: >-
           Optional comma/space-separated recipe directory names to build, test, and publish
-          in the given order (for example: libv4l,nvv4l2). Names are looked up in
-          recipes/foundation and recipes/ros. Empty builds everything.
+          (for example: libv4l,nvv4l2); they are built in dependency order. Names are looked
+          up in recipes/foundation and recipes/ros. Empty builds everything.
         required: false
         type: string
 

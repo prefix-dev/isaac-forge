@@ -46,17 +46,21 @@ build() {
     return
   fi
 
-  # In the caller's order, so a small dependency chain bootstraps in one run (libv4l
-  # before nvv4l2).
+  # One call with every recipe, so rattler-build orders them by their build dependencies
+  # (libv4l before nvv4l2, cuda_buffer_backend_msgs before cuda_buffer). Building them one
+  # by one in the order given built dependents first whenever a pull request touched a
+  # whole chain, and every one of those failed to solve.
   echo "Building $# recipe(s) from recipes/${stage}: $*"
+  local recipes=()
   for name in "$@"; do
     if [[ ! "${name}" =~ ^[a-z0-9][a-z0-9._-]*$ ]] || [ ! -f "recipes/${stage}/${name}/recipe.yaml" ]; then
       echo "::error::Recipe does not exist: recipes/${stage}/${name}"
       exit 2
     fi
-    pixi run rattler-build build --recipe "recipes/${stage}/${name}/recipe.yaml" "${args[@]}" ||
-      fail build "recipes/${stage}/${name} failed to build."
+    recipes+=(--recipe "recipes/${stage}/${name}/recipe.yaml")
   done
+  pixi run rattler-build build "${recipes[@]}" --continue-on-failure "${args[@]}" ||
+    fail build "Some of the selected recipes in recipes/${stage} failed to build."
 }
 
 # Every package's tests run after the whole stage is built, not inline: a test environment
