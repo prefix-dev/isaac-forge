@@ -1,0 +1,18 @@
+From: Isaac Forge <noreply@example.com>
+Subject: [PATCH] Declare the isaac_ros_common dependency
+
+dope_decoder_node.hpp includes isaac_ros_common/cuda_stream.hpp, but the manifest never
+names isaac_ros_common, so ament_auto_find_build_dependencies() does not add its include
+directory. It used to arrive transitively through ament_target_dependencies(), which
+ament_cmake 2.8.6 (ROS 2 Lyrical) removed.
+---
+--- a/isaac_ros_dope/package.xml
++++ b/isaac_ros_dope/package.xml
+@@ -41,6 +41,7 @@
+   <depend>cv_bridge</depend>
+ 
+   <depend>cuda_buffer</depend>
++  <depend>isaac_ros_common</depend>
+   <depend>isaac_ros_dnn_image_encoder</depend>
+   <depend>isaac_ros_tensor_msgs</depend>
+   <depend>isaac_ros_tensor_rt</depend>

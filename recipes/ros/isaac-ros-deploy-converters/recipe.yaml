@@ -19,6 +19,7 @@ source:
     target_directory: src
     patches:
       - patches/0001-support-vector-backed-tensor-messages.patch
+      - patches/0002-replace-removed-ament_target_dependencies.patch
 
 build:
   number: 0

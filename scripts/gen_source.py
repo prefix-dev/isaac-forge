@@ -709,6 +709,9 @@ EXTRA_DEPS = {
     # CMakeLists calls find_package(ament_cmake_ros); package.xml never declares it. On
     # Jazzy it arrived transitively, on Lyrical it does not.
     ROS + "vda5050-action-handler-plugins": [ROS + "ament-cmake-ros"],
+    # Includes isaac_ros_common/cuda_stream.hpp without declaring isaac_ros_common; the
+    # matching package.xml patch is in PATCHES.
+    ROS + "isaac-ros-dope": [ROS + "isaac-ros-common"],
 }
 
 # Packages not built for a distro, with the reason. Keyed by conda package name ->
@@ -721,6 +724,10 @@ SKIP = {
         "lyrical": "needs realsense2_camera_msgs, not in robostack-lyrical yet"},
     ROS + "isaac-ros-cumotion-examples": {
         "lyrical": "needs moveit2_tutorials, not in robostack-lyrical yet"},
+    ROS + "isaac-ros-franka-cumotion-benchmark": {
+        "lyrical": "needs isaac_ros_cumotion_examples, skipped on Lyrical"},
+    ROS + "isaac-ros-ur5-cumotion-benchmark": {
+        "lyrical": "needs isaac_ros_cumotion_examples, skipped on Lyrical"},
 }
 
 # Declared dependencies deliberately left out, with the reason. Keyed by conda package
@@ -1115,6 +1122,9 @@ PATCHES = {
     ROS + "nvblox-image-padding": ["patches/0001-replace-removed-ament_target_dependencies.patch"],
     ROS + "nvblox-nav2": ["patches/0001-replace-removed-ament_target_dependencies.patch"],
     ROS + "nvblox-message-adapters": ["patches/0001-replace-removed-ament_target_dependencies.patch"],
+    ROS + "vda5050-action-handler-plugins": [
+        "patches/0001-replace-removed-ament_target_dependencies.patch"],
+    ROS + "isaac-ros-dope": ["patches/0002-declare-isaac-ros-common-dependency.patch"],
     # Uses neither ament_cmake_auto nor a dependency without targets, so it links each
     # dependency's ${<pkg>_TARGETS} directly.
     ROS + "unitree-hg-ros2-control": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
@@ -1130,7 +1140,8 @@ PATCHES = {
     # Triton C API. This makes the dependency reproducible and visible to the solver.
     ROS + "isaac-deploy-core": ["use-packaged-triton.patch"],
     ROS + "isaac-ros-deploy-converters": [
-        "patches/0001-support-vector-backed-tensor-messages.patch"],
+        "patches/0001-support-vector-backed-tensor-messages.patch",
+        "patches/0002-replace-removed-ament_target_dependencies.patch"],
     ROS + "isaac-ros-triton": ["patches/0001-use-packaged-triton-core.patch"],
     ROS + "unitree-g1-bridge": ["patches/0001-match-package-version.patch"],
     # Isaac ROS targets CV-CUDA 0.14; adapt its changed C++ wrappers to conda-forge 0.16.

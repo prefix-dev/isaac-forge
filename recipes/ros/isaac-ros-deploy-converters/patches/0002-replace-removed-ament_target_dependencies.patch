@@ -1,0 +1,84 @@
+From: Isaac Forge <noreply@example.com>
+Subject: [PATCH] Replace removed ament_target_dependencies()
+
+ament_cmake 2.8.6 removed ament_target_dependencies() (ament/ament_cmake#614), so this
+no longer configures on ROS 2 Lyrical. ament_cmake_auto's
+ament_auto_depend_on_packages() is its replacement: it links ${<pkg>_TARGETS} where a
+package exports targets and falls back to <pkg>_INCLUDE_DIRS/_LIBRARIES otherwise, which
+isaac_ros_common still needs. Without SCOPE it uses the plain target_link_libraries()
+signature, matching the other calls on these targets.
+---
+--- a/isaac_deploy/isaac_ros_deploy_converters/CMakeLists.txt
++++ b/isaac_deploy/isaac_ros_deploy_converters/CMakeLists.txt
+@@ -56,7 +56,7 @@
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   $<INSTALL_INTERFACE:include>
+ )
+-ament_target_dependencies(converters
++ament_auto_depend_on_packages(converters PACKAGES
+   rclcpp
+   isaac_ros_deploy_interfaces
+   sensor_msgs
+@@ -83,7 +83,7 @@
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   $<INSTALL_INTERFACE:include>
+ )
+-ament_target_dependencies(tensor_list_utils
++ament_auto_depend_on_packages(tensor_list_utils PACKAGES
+   cuda_buffer
+   rclcpp
+   isaac_ros_tensor_msgs
+@@ -112,7 +112,7 @@
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   $<INSTALL_INTERFACE:include>
+ )
+-ament_target_dependencies(output_converters
++ament_auto_depend_on_packages(output_converters PACKAGES
+   rclcpp
+   isaac_ros_deploy_interfaces
+   sensor_msgs
+@@ -144,7 +144,7 @@
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   $<INSTALL_INTERFACE:include>
+ )
+-ament_target_dependencies(isaac_ros_deploy_converters_lib
++ament_auto_depend_on_packages(isaac_ros_deploy_converters_lib PACKAGES
+   rclcpp
+   rclcpp_components
+   isaac_ros_deploy_interfaces
+@@ -237,7 +237,7 @@
+ # libraries, so dlopen of composable node .so files that need them fails.
+ # TODO(lgulich): Remove this again
+ add_executable(component_container src/nodes/component_container_main.cpp)
+-ament_target_dependencies(component_container rclcpp rclcpp_components)
++ament_auto_depend_on_packages(component_container PACKAGES rclcpp rclcpp_components)
+ target_link_libraries(component_container isaac_ros_deploy_converters_lib)
+ set_target_properties(component_container PROPERTIES
+   INSTALL_RPATH "${TORCH_INSTALL_PREFIX}/lib;$ORIGIN/.."
+@@ -316,7 +316,7 @@
+   target_include_directories(test_message_to_tensor_converters PRIVATE
+     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   )
+-  ament_target_dependencies(test_message_to_tensor_converters
++  ament_auto_depend_on_packages(test_message_to_tensor_converters PACKAGES
+     rclcpp
+     geometry_msgs
+   )
+@@ -335,7 +335,7 @@
+   target_include_directories(test_joint_command_trajectory_converter PRIVATE
+     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   )
+-  ament_target_dependencies(test_joint_command_trajectory_converter
++  ament_auto_depend_on_packages(test_joint_command_trajectory_converter PACKAGES
+     rclcpp
+     isaac_ros_deploy_interfaces
+   )
+@@ -354,7 +354,7 @@
+   target_include_directories(test_tensor_list_utils PRIVATE
+     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   )
+-  ament_target_dependencies(test_tensor_list_utils
++  ament_auto_depend_on_packages(test_tensor_list_utils PACKAGES
+     cuda_buffer
+     rclcpp
+     isaac_ros_tensor_msgs

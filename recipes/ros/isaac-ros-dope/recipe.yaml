@@ -17,6 +17,8 @@ source:
   - url: https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_pose_estimation/archive/refs/tags/v5.0-0.tar.gz
     sha256: 5e5138211051336013a9800b8dbd296e254e154b523da5305cf5f2d29a082fca
     target_directory: src
+    patches:
+      - patches/0002-declare-isaac-ros-common-dependency.patch
 
 build:
   number: 0
@@ -92,6 +94,7 @@ requirements:
     - ros-${{ ros_distro }}-ament-index-cpp
     - ros-${{ ros_distro }}-cuda-buffer
     - ros-${{ ros_distro }}-cv-bridge
+    - ros-${{ ros_distro }}-isaac-ros-common
     - ros-${{ ros_distro }}-isaac-ros-dnn-image-encoder
     - ros-${{ ros_distro }}-isaac-ros-tensor-msgs
     - ros-${{ ros_distro }}-message-filters
@@ -113,6 +116,7 @@ requirements:
     - ros-${{ ros_distro }}-ament-index-cpp
     - ros-${{ ros_distro }}-cuda-buffer
     - ros-${{ ros_distro }}-cv-bridge
+    - ros-${{ ros_distro }}-isaac-ros-common
     - ros-${{ ros_distro }}-isaac-ros-dnn-image-encoder
     - ros-${{ ros_distro }}-isaac-ros-tensor-msgs
     - ros-${{ ros_distro }}-message-filters
