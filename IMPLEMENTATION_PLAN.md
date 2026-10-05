@@ -18,7 +18,7 @@ tested builds in the old `isaac-forge` channel, and **main builds Lyrical 5.0**.
 | Recipes | One distro-neutral recipe per package. `ros_distro` is a variant key; names and deps use `ros-${{ ros_distro }}-...`; `$ROS_DISTRO` conditions in `package.xml` become `if: ros_distro == ...` selectors. Only Lyrical is built today; another distro is a variant file and a matrix entry. |
 | Variant files | `variants.yaml` keeps shared pins and **no `python`**. `variants-lyrical.yaml`: `ros_distro: lyrical`, `python: 3.14.*`. No `channel_sources`; channels are passed with `-c`. |
 | Layout | `recipes/foundation/` = NVIDIA packages (libdcgm, libv4l, nvv4l2, tensorrt, tensorrt-conda-forge, triton-server, vpi), built with `variants.yaml` alone. `recipes/ros/` = ROS packages, built with the distro file too. |
-| Jazzy | Frozen at Isaac ROS 4.6. A manually triggered `release.yml` job copies the 4.6 `ros-jazzy-*` packages and their dependency closure from `isaac-forge` into `isaac-forge/jazzy`, choosing builds with a solver so the result installs. If a 4.6 fix is ever needed, branch from `df4b8e0`. |
+| Jazzy | Frozen at Isaac ROS 4.6. `scripts/snapshot_jazzy.py` selects the 4.6 `ros-jazzy-*` packages and their dependency closure from `isaac-forge` with a solver, so the result installs, and downloads them; uploading to `isaac-forge/jazzy` is a one-time manual step, not part of `release.yml`. If a 4.6 fix is ever needed, branch from `df4b8e0`. |
 | Removed | Jazzy-only pieces that existed to build 5.0 on Jazzy: `variants-jazzy.yaml`, the urdf `model.h` patch, the `rosidl-buffer*` recipes (robostack-lyrical has them), `tensorrt-python` (Jetson CPython 3.12 binding; its 4.6-era builds are in the Jazzy snapshot). |
 | CI | `release.yml`: `plan` → `render` + `build` (platform × distro, distro = lyrical). Each build job builds foundations then ROS, tests, and publishes to `isaac-forge/<distro>`. Channels: `./output` → `isaac-forge/<distro>` → `robostack-<distro>` → `conda-forge`. |
 | Old channel | Stop publishing to the flat `isaac-forge` channel and leave it readable. README points users to the per-distro channels. |
@@ -45,7 +45,7 @@ tested builds in the old `isaac-forge` channel, and **main builds Lyrical 5.0**.
 **Status**: In Progress (two-stage version written and linted; Stage 5 simplifies it)
 
 ## Stage 5: Lyrical-only main, frozen Jazzy 4.6
-**Goal**: Remove the Jazzy build path from main, simplify CI to one build job per platform × distro, and add the Jazzy 4.6 snapshot job.
+**Goal**: Remove the Jazzy build path from main, simplify CI to one build job per platform × distro, and add the Jazzy 4.6 snapshot script.
 **Success Criteria**:
 - `pixi run render` passes for Lyrical on both platforms; `grep -rn jazzy recipes/` finds nothing.
 - The snapshot script, run locally in dry-run mode, selects an installable 4.6 set for linux-64 and linux-aarch64 (both TensorRT flavors) and lists anything it had to leave out.
@@ -54,7 +54,7 @@ tested builds in the old `isaac-forge` channel, and **main builds Lyrical 5.0**.
 
 ## Stage 4: Upstream and rollout
 **Goal**: Publish both channels for real.
-- Run the Jazzy snapshot job once; check `isaac-forge/jazzy` against the old channel's 4.6 set.
+- Download the Jazzy 4.6 set with `scripts/snapshot_jazzy.py --download` and upload it to `isaac-forge/jazzy` once; check it against the old channel's 4.6 set.
 - First full `release.yml` run on main fills `isaac-forge/lyrical`.
 - Open a PR on RoboStack/ros-lyrical adding `realsense2-camera-msgs` and `moveit2-tutorials`. Link it from the skips.
 - Re-lock `yolo/` against the new channels.

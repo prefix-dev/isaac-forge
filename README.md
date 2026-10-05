@@ -131,8 +131,8 @@ distro needs a `variants-<distro>.yaml` and a matrix entry in `release.yml`. The
 packages in `recipes/foundation/` do not depend on the distro.
 
 The Jazzy channel is not built from this tree. `scripts/snapshot_jazzy.py` selects the 4.6
-release from the old channel by solving it against today's robostack-jazzy, and the manual
-`jazzy_snapshot` run of `release.yml` copies it to `isaac-forge/jazzy`. The 4.6 recipes are
+release from the old channel by solving it against today's robostack-jazzy and downloads it;
+uploading that to `isaac-forge/jazzy` is a one-time manual step. The 4.6 recipes are
 in git history at `df4b8e0`.
 
 Packages are written to `output/linux-64/`, `output/linux-aarch64/`, and `output/noarch/`.
@@ -193,7 +193,7 @@ scripts/build_all.sh     resumable build driver
 scripts/test_all.sh      clean-environment package tests
 scripts/gen_source.py    source-recipe generator
 scripts/test_variants.py checks the recipes render correctly for every distro
-scripts/snapshot_jazzy.py selects and copies the frozen Jazzy 4.6 release
+scripts/snapshot_jazzy.py selects and downloads the frozen Jazzy 4.6 release
 scripts/gen_repack.py    vendor-package recipe generator
 packages.json            generated Isaac ROS package inventory
 variants.yaml            shared CUDA and compiler pins

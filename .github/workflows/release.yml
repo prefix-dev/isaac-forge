@@ -7,8 +7,6 @@ name: release
 #   render          every recipe renders for every distro (scripts/test_variants.py)
 #   build           per platform and ROS distro: recipes/foundation, then recipes/ros
 #                   against that distro's RoboStack, then tests, then publish
-#   jazzy-snapshot  manual only: copies the frozen Isaac ROS 4.6 Jazzy release from the
-#                   old isaac-forge channel to isaac-forge/jazzy (scripts/snapshot_jazzy.py)
 #
 # Pull requests build and test the recipes they change and publish nothing.
 #
@@ -29,12 +27,6 @@ on:
           recipes/foundation and recipes/ros. Empty builds everything.
         required: false
         type: string
-      jazzy_snapshot:
-        description: >-
-          Copy the Isaac ROS 4.6 Jazzy release to isaac-forge/jazzy instead of building.
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -52,7 +44,6 @@ concurrency:
 
 jobs:
   plan:
-    if: ${{ !inputs.jazzy_snapshot }}
     runs-on: ubuntu-24.04
     outputs:
       # "all", "none", or space-separated recipe directory names.
@@ -98,7 +89,6 @@ jobs:
           echo "ros: ${ros:-none}"
 
   render:
-    if: ${{ !inputs.jazzy_snapshot }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -227,37 +217,3 @@ jobs:
             failed-packages/packages.txt
           if-no-files-found: ignore
           retention-days: 14
-
-  jazzy-snapshot:
-    if: ${{ inputs.jazzy_snapshot }}
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Free runner disk space
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
-            /usr/local/share/boost /usr/local/.ghcup
-          df -h /
-
-      - uses: prefix-dev/setup-pixi@v0.10.2
-        timeout-minutes: 15
-        with:
-          pixi-version: v0.81.0
-          locked: true
-
-      # The solve and its result are in the log; a 4.6 package that no longer installs is
-      # listed as "left out" rather than copied.
-      - name: Select and download the 4.6 release
-        run: pixi exec --spec "py-rattler>=0.27" python scripts/snapshot_jazzy.py --download snapshot
-
-      # --skip-existing makes a re-run only add what is missing.
-      - name: Publish to isaac-forge/jazzy
-        run: |
-          shopt -s nullglob
-          pkgs=(snapshot/*/*.conda)
-          printf 'Publishing %s package(s)\n' "${#pkgs[@]}"
-          pixi run rattler-build upload prefix --skip-existing -c isaac-forge/jazzy "${pkgs[@]}"
