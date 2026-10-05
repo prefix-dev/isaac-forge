@@ -1,18 +1,27 @@
 # isaac-forge
 
-`isaac-forge` packages Isaac ROS 5.0.0 for ROS 2 Jazzy as conda packages. The
+`isaac-forge` packages Isaac ROS 5.0.0 for ROS 2 Jazzy and ROS 2 Lyrical as conda packages. The
 packages work alongside [RoboStack](https://robostack.github.io/) and can be installed with
 [Pixi](https://pixi.sh/) on x86_64 Linux and Jetson/ARM64.
 
 ## Using the packages
 
-The packages are published in the public
-[`isaac-forge` channel on prefix.dev](https://prefix.dev/channels/isaac-forge). A Pixi
-environment should use these channels, in this order:
+The packages are published on prefix.dev, one public channel per ROS distro:
 
-1. `isaac-forge` for Isaac ROS and the few dependencies packaged here
-2. `robostack-jazzy` for ROS 2 Jazzy
+| ROS 2 | Isaac ROS channel | RoboStack channel |
+|---|---|---|
+| Jazzy | [`isaac-forge/jazzy`](https://prefix.dev/channels/isaac-forge/jazzy) | `robostack-jazzy` |
+| Lyrical | [`isaac-forge/lyrical`](https://prefix.dev/channels/isaac-forge/lyrical) | `robostack-lyrical` |
+
+A Pixi environment should use these channels, in this order:
+
+1. `isaac-forge/<distro>` for Isaac ROS and the few dependencies packaged here
+2. `robostack-<distro>` for ROS 2 itself
 3. `conda-forge` for everything else
+
+Lyrical is new: packages that fail to build or test there are skipped rather than blocking
+a release, so check the channel page for what is available. The older flat `isaac-forge`
+channel holds the earlier Jazzy builds and no longer receives updates.
 
 Here is a small environment for the Isaac ROS YOLOv8 pipeline:
 
@@ -20,7 +29,7 @@ Here is a small environment for the Isaac ROS YOLOv8 pipeline:
 # pixi.toml
 [workspace]
 channels = [
-  "https://prefix.dev/isaac-forge",
+  "https://prefix.dev/isaac-forge/jazzy",
   "https://prefix.dev/robostack-jazzy",
   "conda-forge",
 ]
@@ -52,10 +61,13 @@ compute capability to choose the Orin TensorRT build. The packages target the Ub
 glibc floor (`2.38`) and the CUDA 13 stack, so GPU workloads also need a compatible NVIDIA
 driver. Pixi installs the user-space CUDA libraries; it does not install the host driver.
 
+For Lyrical, use `isaac-forge/lyrical` and `robostack-lyrical`, `python = "3.14.*"`, and the
+`ros-lyrical-*` package names.
+
 Package names follow the usual RoboStack convention: the ROS package
-`isaac_ros_visual_slam`, for example, is named
-`ros-jazzy-isaac-ros-visual-slam`. You can browse or search all available names on the
-[channel page](https://prefix.dev/channels/isaac-forge). Pixi resolves the package's NITROS,
+`isaac_ros_visual_slam`, for example, is named `ros-jazzy-isaac-ros-visual-slam` or
+`ros-lyrical-isaac-ros-visual-slam`. You can browse or search all available names on the
+channel pages. Pixi resolves the package's NITROS,
 ROS, CUDA, and other library dependencies automatically.
 
 For a complete working project, see [`yolo/`](yolo/README.md). Its `pixi.toml` consumes the
