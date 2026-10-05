@@ -43,9 +43,9 @@ BLOCKERS = {
 # package is *not* flagged stays visible, and so the next person can see what a resolved
 # blocker looks like.
 RESOLVED = {
-    "vpi": {"libnvvpi4", "vpi4-dev"},            # recipes/vpi -- was under 219 packages
-    "tensorrt": {"tensorrt"},                    # recipes/tensorrt -- was under 37
-    # recipes/triton-server builds the public C API from source; isaac_ros_triton uses
+    "vpi": {"libnvvpi4", "vpi4-dev"},            # recipes/foundation/vpi -- was under 219 packages
+    "tensorrt": {"tensorrt"},                    # recipes/foundation/tensorrt -- was under 37
+    # recipes/foundation/triton-server builds the public C API from source; isaac_ros_triton uses
     # its exported target instead of NVIDIA's unreachable private x86_64 tarball.
     "triton": {"triton-server"},                 # was under 27 packages
 }

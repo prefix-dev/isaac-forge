@@ -26,8 +26,54 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gen_repack import DROP, EXTERNAL, MAP  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RECIPES = os.path.join(ROOT, "recipes")
+RECIPES = os.path.join(ROOT, "recipes", "ros")
 CACHE = os.path.join(ROOT, ".srccache")
+
+# Every recipe is built once per ROS distro. rattler-build fills in ros_distro from
+# variants-<distro>.yaml, so one recipe yields ros-jazzy-* and ros-lyrical-* packages.
+DISTROS = ("jazzy", "lyrical")
+ROS = "ros-${{ ros_distro }}-"
+
+
+class OnlyOn(str):
+    """A requirement or patch that applies to one distro only.
+
+    Rendered as an `if: ros_distro == ...` selector. It is still a str, so the list
+    filtering below (startswith, membership) treats it like any other entry.
+    """
+
+    def __new__(cls, distro: str, value: str) -> "OnlyOn":
+        if distro not in DISTROS:
+            raise ValueError(f"unknown distro {distro!r} for {value!r}")
+        item = super().__new__(cls, value)
+        item.distro = distro
+        return item
+
+
+def render_items(items: list[str], indent: int = 4) -> str:
+    """A YAML list body, with OnlyOn entries as rattler-build selectors."""
+    pad = " " * indent
+    lines = []
+    for item in items:
+        if isinstance(item, OnlyOn):
+            lines.append(f'{pad}- if: ros_distro == "{item.distro}"\n{pad}  then: {item}')
+        else:
+            lines.append(f"{pad}- {item}")
+    return "\n".join(lines) or f"{pad}# none"
+
+
+def recipe_dir(name: str) -> str:
+    """recipes/ros/<this>: the package name without the ros-<distro>- prefix."""
+    return name.replace(ROS, "")
+
+
+def skip_block(name: str) -> str:
+    """`skip:` for the distros SKIP excludes this package from, or nothing."""
+    reasons = SKIP.get(name, {})
+    if not reasons:
+        return ""
+    return "\n  skip:" + "".join(f'\n    # {why}\n    - ros_distro == "{d}"'
+                                 for d, why in sorted(reasons.items()))
 
 # Upstream tarballs. NVIDIA sources are pinned to the v5.0-0 release tag (or release-5.0 commit where the tag is pending); osrf's
 # negotiated has no tags at all, so it is pinned to a commit.
@@ -158,44 +204,44 @@ REPOS = {
 # interfaces and leaf libraries first, so a plain sequential build resolves.
 PACKAGES = [
     # rosidl interface packages -- no Isaac deps, safe to go first
-    ("ros-jazzy-isaac-ros-tensor-list-interfaces", "isaac_ros_common", "isaac_ros_tensor_list_interfaces"),
-    ("ros-jazzy-isaac-ros-pointcloud-interfaces", "isaac_ros_common", "isaac_ros_pointcloud_interfaces"),
-    ("ros-jazzy-isaac-ros-visual-slam-interfaces", "isaac_ros_visual_slam", "isaac_ros_visual_slam_interfaces"),
-    ("ros-jazzy-ros2-benchmark-interfaces", "ros2_benchmark", "ros2_benchmark_interfaces"),
-    ("ros-jazzy-negotiated-interfaces", "negotiated", "negotiated_interfaces"),
-    ("ros-jazzy-negotiated", "negotiated", "negotiated"),
+    (ROS + "isaac-ros-tensor-list-interfaces", "isaac_ros_common", "isaac_ros_tensor_list_interfaces"),
+    (ROS + "isaac-ros-pointcloud-interfaces", "isaac_ros_common", "isaac_ros_pointcloud_interfaces"),
+    (ROS + "isaac-ros-visual-slam-interfaces", "isaac_ros_visual_slam", "isaac_ros_visual_slam_interfaces"),
+    (ROS + "ros2-benchmark-interfaces", "ros2_benchmark", "ros2_benchmark_interfaces"),
+    (ROS + "negotiated-interfaces", "negotiated", "negotiated_interfaces"),
+    (ROS + "negotiated", "negotiated", "negotiated"),
     # Buffer backends introduced by ROS 2 Rolling and used by Isaac ROS 5.0.
-    ("ros-jazzy-rosidl-buffer", "rosidl", "rosidl_buffer"),
-    ("ros-jazzy-rosidl-buffer-backend", "rosidl", "rosidl_buffer_backend"),
-    ("ros-jazzy-rosidl-buffer-backend-registry", "rosidl", "rosidl_buffer_backend_registry"),
-    ("ros-jazzy-cuda-buffer-backend-msgs", "rosidl_buffer_backends",
+    (ROS + "rosidl-buffer", "rosidl", "rosidl_buffer"),
+    (ROS + "rosidl-buffer-backend", "rosidl", "rosidl_buffer_backend"),
+    (ROS + "rosidl-buffer-backend-registry", "rosidl", "rosidl_buffer_backend_registry"),
+    (ROS + "cuda-buffer-backend-msgs", "rosidl_buffer_backends",
      "cuda_buffer_backend/cuda_buffer_backend_msgs"),
-    ("ros-jazzy-tensor-msgs", "rosidl_buffer_backends", "tensor_msgs"),
-    ("ros-jazzy-cuda-buffer", "rosidl_buffer_backends", "cuda_buffer_backend/cuda_buffer"),
-    ("ros-jazzy-cuda-buffer-backend", "rosidl_buffer_backends",
+    (ROS + "tensor-msgs", "rosidl_buffer_backends", "tensor_msgs"),
+    (ROS + "cuda-buffer", "rosidl_buffer_backends", "cuda_buffer_backend/cuda_buffer"),
+    (ROS + "cuda-buffer-backend", "rosidl_buffer_backends",
      "cuda_buffer_backend/cuda_buffer_backend"),
     # small libraries and interfaces
-    ("ros-jazzy-isaac-common", "isaac_ros_common", "isaac_common"),
-    ("ros-jazzy-isaac-ros-common", "isaac_ros_common", "isaac_ros_common"),
-    ("ros-jazzy-isaac-ros-tensor-msgs", "isaac_ros_common", "isaac_ros_tensor_msgs"),
-    ("ros-jazzy-isaac-ros-topic-tools", "isaac_ros_common", "isaac_ros_topic_tools"),
-    ("ros-jazzy-isaac-ros-gpu-partitioning", "isaac_ros_common", "isaac_ros_gpu_partitioning"),
-    ("ros-jazzy-isaac-ros-r2b-galileo", "isaac_ros_common", "isaac_ros_r2b_galileo"),
-    ("ros-jazzy-teleop-ros2-interfaces", "isaac_ros_teleop", "teleop_ros2_interfaces"),
+    (ROS + "isaac-common", "isaac_ros_common", "isaac_common"),
+    (ROS + "isaac-ros-common", "isaac_ros_common", "isaac_ros_common"),
+    (ROS + "isaac-ros-tensor-msgs", "isaac_ros_common", "isaac_ros_tensor_msgs"),
+    (ROS + "isaac-ros-topic-tools", "isaac_ros_common", "isaac_ros_topic_tools"),
+    (ROS + "isaac-ros-gpu-partitioning", "isaac_ros_common", "isaac_ros_gpu_partitioning"),
+    (ROS + "isaac-ros-r2b-galileo", "isaac_ros_common", "isaac_ros_r2b_galileo"),
+    (ROS + "teleop-ros2-interfaces", "isaac_ros_teleop", "teleop_ros2_interfaces"),
     # utility and conversion libraries
-    ("ros-jazzy-cvcuda-conversions", "isaac_ros_image_pipeline", "cvcuda_conversions"),
-    ("ros-jazzy-pointcloud-conversions", "isaac_ros_image_pipeline", "pointcloud_conversions"),
-    ("ros-jazzy-tensorrt-conversions", "isaac_ros_dnn_inference", "tensorrt_conversions"),
-    ("ros-jazzy-triton-conversions", "isaac_ros_dnn_inference", "triton_conversions"),
-    ("ros-jazzy-vpi-conversions", "isaac_ros_image_pipeline", "vpi_conversions"),
-    ("ros-jazzy-isaac-ros-vpi-utils", "isaac_ros_image_pipeline", "isaac_ros_vpi_utils"),
-    ("ros-jazzy-isaac-ros-cvcuda-utils", "isaac_ros_image_pipeline", "isaac_ros_cvcuda_utils"),
-    ("ros-jazzy-isaac-ros-image-proc", "isaac_ros_image_pipeline", "isaac_ros_image_proc"),
-    ("ros-jazzy-isaac-ros-h264-decoder", "isaac_ros_compression", "isaac_ros_h264_decoder"),
+    (ROS + "cvcuda-conversions", "isaac_ros_image_pipeline", "cvcuda_conversions"),
+    (ROS + "pointcloud-conversions", "isaac_ros_image_pipeline", "pointcloud_conversions"),
+    (ROS + "tensorrt-conversions", "isaac_ros_dnn_inference", "tensorrt_conversions"),
+    (ROS + "triton-conversions", "isaac_ros_dnn_inference", "triton_conversions"),
+    (ROS + "vpi-conversions", "isaac_ros_image_pipeline", "vpi_conversions"),
+    (ROS + "isaac-ros-vpi-utils", "isaac_ros_image_pipeline", "isaac_ros_vpi_utils"),
+    (ROS + "isaac-ros-cvcuda-utils", "isaac_ros_image_pipeline", "isaac_ros_cvcuda_utils"),
+    (ROS + "isaac-ros-image-proc", "isaac_ros_image_pipeline", "isaac_ros_image_proc"),
+    (ROS + "isaac-ros-h264-decoder", "isaac_ros_compression", "isaac_ros_h264_decoder"),
     # benchmark harness
-    ("ros-jazzy-ros2-benchmark", "ros2_benchmark", "ros2_benchmark"),
-    ("ros-jazzy-isaac-ros-benchmark", "isaac_ros_benchmark", "isaac_ros_benchmark"),
-    ("ros-jazzy-isaac-ros-image-proc-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_image_proc_benchmark"),
+    (ROS + "ros2-benchmark", "ros2_benchmark", "ros2_benchmark"),
+    (ROS + "isaac-ros-benchmark", "isaac_ros_benchmark", "isaac_ros_benchmark"),
+    (ROS + "isaac-ros-image-proc-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_image_proc_benchmark"),
     # --- the manipulation stack ------------------------------------------------
     # Interfaces it needs from sibling repos, then the manipulation packages
     # themselves. The two bringup packages follow near the end, after their complete
@@ -208,25 +254,25 @@ PACKAGES = [
     # builds what rosdistro releases, cannot have it and `rosdep install` on jazzy cannot
     # resolve it either. It is BSD-licensed, four dependencies wide and builds clean, so
     # it is built here from the upstream commit. See ISSUES.md.
-    ("ros-jazzy-topic-based-ros2-control", "topic_based_ros2_control", "."),
+    (ROS + "topic-based-ros2-control", "topic_based_ros2_control", "."),
     # robotiq_controllers used to be built here. It is in robostack-jazzy now (0.0.1,
     # the same release tag), so the duplicate is gone and the dependency resolves from
     # the channel -- which was always the right outcome: its sibling robotiq_description
     # was already there and this was only ever a selection gap.
-    ("ros-jazzy-isaac-ros-cumotion-interfaces", "isaac_ros_cumotion", "isaac_ros_cumotion_interfaces"),
-    ("ros-jazzy-isaac-ros-segment-anything2-interfaces", "isaac_ros_image_segmentation", "isaac_ros_segment_anything2_interfaces"),
-    ("ros-jazzy-isaac-ros-manipulation-interfaces", "isaac_ros_manipulation",
+    (ROS + "isaac-ros-cumotion-interfaces", "isaac_ros_cumotion", "isaac_ros_cumotion_interfaces"),
+    (ROS + "isaac-ros-segment-anything2-interfaces", "isaac_ros_image_segmentation", "isaac_ros_segment_anything2_interfaces"),
+    (ROS + "isaac-ros-manipulation-interfaces", "isaac_ros_manipulation",
      "isaac_ros_manipulation_interfaces"),
     # ament_python leaves
-    ("ros-jazzy-isaac-common-py", "isaac_ros_common", "isaac_common_py"),
-    ("ros-jazzy-isaac-ros-launch-utils", "isaac_ros_common", "isaac_ros_launch_utils"),
+    (ROS + "isaac-common-py", "isaac_ros_common", "isaac_common_py"),
+    (ROS + "isaac-ros-launch-utils", "isaac_ros_common", "isaac_ros_launch_utils"),
     # isaac_ros_test is a test harness, but not an optional one:
     # isaac_ros_manipulation_ros_python_utils/test_utils.py imports IsaacROSBaseTest at
     # module level and __init__.py re-exports it, so `import
     # isaac_ros_manipulation_ros_python_utils` fails without it. That is also where the
     # pytorch dependency comes from -- isaac_ros_test/__init__.py pulls in
     # mock_model_generator, which imports torch.
-    ("ros-jazzy-isaac-ros-test", "isaac_ros_common", "isaac_ros_test"),
+    (ROS + "isaac-ros-test", "isaac_ros_common", "isaac_ros_test"),
     # C++ / rosidl on top of the python utilities
     # --- cuMotion, which the last two manipulation packages need -----------------
     # The cuMotion library itself is already packaged: libcumotion.so.1.1.0, its headers
@@ -239,18 +285,18 @@ PACKAGES = [
     # keying packages by name: isaac_ros_noetic_interfaces ships a *different*
     # nvblox_msgs, a catkin package, and it wins the name collision. The jazzy one has no
     # ROS 1 dependency at all.
-    ("ros-jazzy-nvblox-msgs", "isaac_ros_nvblox", "nvblox_msgs"),
-    ("ros-jazzy-cumotion-vendor", "isaac_ros_nitros", "cumotion_vendor"),
-    ("ros-jazzy-isaac-ros-cumotion-robot-description", "isaac_ros_cumotion", "isaac_ros_cumotion_robot_description"),
-    ("ros-jazzy-isaac-ros-cumotion", "isaac_ros_cumotion", "isaac_ros_cumotion"),
-    ("ros-jazzy-isaac-ros-cumotion-object-attachment", "isaac_ros_cumotion", "isaac_ros_cumotion_object_attachment"),
+    (ROS + "nvblox-msgs", "isaac_ros_nvblox", "nvblox_msgs"),
+    (ROS + "cumotion-vendor", "isaac_ros_nitros", "cumotion_vendor"),
+    (ROS + "isaac-ros-cumotion-robot-description", "isaac_ros_cumotion", "isaac_ros_cumotion_robot_description"),
+    (ROS + "isaac-ros-cumotion", "isaac_ros_cumotion", "isaac_ros_cumotion"),
+    (ROS + "isaac-ros-cumotion-object-attachment", "isaac_ros_cumotion", "isaac_ros_cumotion_object_attachment"),
     # Needs cuMotion's object attachment and the Robotiq gripper controller, so it comes
     # after both.
     # Last of the manipulation packages: it needs isaac_ros_cumotion_moveit, so it only
     # became reachable once cuMotion built against eigen 5.
     # The MoveIt plugin: cuMotion (Eigen 3 ABI) and moveit_core (Eigen 5) in one
     # translation unit. Only buildable because of the eigen decision in TRAIT_DEPS.
-    ("ros-jazzy-isaac-ros-cumotion-moveit", "isaac_ros_cumotion", "isaac_ros_cumotion_moveit"),
+    (ROS + "isaac-ros-cumotion-moveit", "isaac_ros_cumotion", "isaac_ros_cumotion_moveit"),
     # --- pose estimation, and the two DNN-inference packages it needs ------------
     #
     # isaac_ros_dnn_inference is where TensorRT lives, so the whole repo reads as
@@ -264,18 +310,18 @@ PACKAGES = [
     # That distinction is what puts isaac_ros_foundationpose in reach: TensorRT appears
     # in its manifest only as an <exec_depend>, never as a <depend>, so nothing about
     # TensorRT runs at configure time. See DROP_DEPS for what that costs at runtime.
-    ("ros-jazzy-isaac-ros-tensor-proc", "isaac_ros_dnn_inference", "isaac_ros_tensor_proc"),
-    ("ros-jazzy-isaac-ros-dnn-image-encoder", "isaac_ros_dnn_inference", "isaac_ros_dnn_image_encoder"),
+    (ROS + "isaac-ros-tensor-proc", "isaac_ros_dnn_inference", "isaac_ros_tensor_proc"),
+    (ROS + "isaac-ros-dnn-image-encoder", "isaac_ros_dnn_inference", "isaac_ros_dnn_image_encoder"),
     # Pure CPU pose filtering -- six composable nodes over vision_msgs and tf2, with no
     # Isaac dependency beyond isaac_ros_common's cmake. The one package in
     # isaac_ros_pose_estimation that never needed anything from the DNN stack.
-    ("ros-jazzy-isaac-ros-pose-proc", "isaac_ros_pose_estimation", "isaac_ros_pose_proc"),
+    (ROS + "isaac-ros-pose-proc", "isaac_ros_pose_estimation", "isaac_ros_pose_proc"),
     # Asset-download scripts. Nothing to compile, but it is a <depend> of
     # isaac_ros_foundationpose, so ament_auto_find_build_dependencies needs it present at
     # configure time.
-    ("ros-jazzy-isaac-ros-foundationpose-models-install", "isaac_ros_pose_estimation",
+    (ROS + "isaac-ros-foundationpose-models-install", "isaac_ros_pose_estimation",
      "isaac_ros_foundationpose_models_install"),
-    ("ros-jazzy-isaac-ros-foundationpose", "isaac_ros_pose_estimation", "isaac_ros_foundationpose"),
+    (ROS + "isaac-ros-foundationpose", "isaac_ros_pose_estimation", "isaac_ros_foundationpose"),
     # The last two looked blocked on TensorRT and Triton, and are not. Neither includes a
     # single header from isaac_ros_tensor_rt or isaac_ros_triton: each builds an
     # OpenCV-and-Eigen decoder node that takes a TensorList off a topic and emits poses,
@@ -284,8 +330,8 @@ PACKAGES = [
     # ament_auto_find_build_dependencies turns every <depend> into a REQUIRED
     # find_package -- so an over-declaration, not a real dependency, is the whole blocker.
     # PATCHES demotes them; see the patch commit messages, both prepared for upstream.
-    ("ros-jazzy-isaac-ros-dope", "isaac_ros_pose_estimation", "isaac_ros_dope"),
-    ("ros-jazzy-isaac-ros-centerpose", "isaac_ros_pose_estimation", "isaac_ros_centerpose"),
+    (ROS + "isaac-ros-dope", "isaac_ros_pose_estimation", "isaac_ros_dope"),
+    (ROS + "isaac-ros-centerpose", "isaac_ros_pose_estimation", "isaac_ros_centerpose"),
     # --- object detection ---------------------------------------------------------
     #
     # All eight packages in isaac_ros_object_detection, and this repo needed no manifest
@@ -300,31 +346,31 @@ PACKAGES = [
     # isaac_ros_nitros_bridge_interfaces is the one dependency that had to come along. It
     # lives in isaac_ros_common rather than isaac_ros_nitros_bridge despite the name, and
     # is a plain rosidl package, so it costs nothing.
-    ("ros-jazzy-isaac-ros-nitros-bridge-interfaces", "isaac_ros_common", "isaac_ros_nitros_bridge_interfaces"),
-    ("ros-jazzy-isaac-ros-grounding-dino-interfaces", "isaac_ros_object_detection", "isaac_ros_grounding_dino_interfaces"),
+    (ROS + "isaac-ros-nitros-bridge-interfaces", "isaac_ros_common", "isaac_ros_nitros_bridge_interfaces"),
+    (ROS + "isaac-ros-grounding-dino-interfaces", "isaac_ros_object_detection", "isaac_ros_grounding_dino_interfaces"),
     # Asset scripts. All three hit the install_isaac_ros_asset() rewrite -- see detect().
-    ("ros-jazzy-isaac-ros-rtdetr-models-install", "isaac_ros_object_detection", "isaac_ros_rtdetr_models_install"),
-    ("ros-jazzy-isaac-ros-grounding-dino-models-install", "isaac_ros_object_detection", "isaac_ros_grounding_dino_models_install"),
+    (ROS + "isaac-ros-rtdetr-models-install", "isaac_ros_object_detection", "isaac_ros_rtdetr_models_install"),
+    (ROS + "isaac-ros-grounding-dino-models-install", "isaac_ros_object_detection", "isaac_ros_grounding_dino_models_install"),
     # DetectNet needs no DNN package at all: its Triton dependency is a <test_depend>.
-    ("ros-jazzy-isaac-ros-detectnet", "isaac_ros_object_detection", "isaac_ros_detectnet"),
+    (ROS + "isaac-ros-detectnet", "isaac_ros_object_detection", "isaac_ros_detectnet"),
     # Depends on isaac_ros_detectnet, so it follows it.
-    ("ros-jazzy-isaac-ros-peoplenet-models-install", "isaac_ros_object_detection", "isaac_ros_peoplenet_models_install"),
-    ("ros-jazzy-isaac-ros-yolov8", "isaac_ros_object_detection", "isaac_ros_yolov8"),
-    ("ros-jazzy-isaac-ros-rtdetr", "isaac_ros_object_detection", "isaac_ros_rtdetr"),
-    ("ros-jazzy-isaac-ros-grounding-dino", "isaac_ros_object_detection", "isaac_ros_grounding_dino"),
+    (ROS + "isaac-ros-peoplenet-models-install", "isaac_ros_object_detection", "isaac_ros_peoplenet_models_install"),
+    (ROS + "isaac-ros-yolov8", "isaac_ros_object_detection", "isaac_ros_yolov8"),
+    (ROS + "isaac-ros-rtdetr", "isaac_ros_object_detection", "isaac_ros_rtdetr"),
+    (ROS + "isaac-ros-grounding-dino", "isaac_ros_object_detection", "isaac_ros_grounding_dino"),
     # --- the TensorRT inference node -----------------------------------------------
     #
     # The backend every DNN pipeline above actually defaults to. linux-64 uses
-    # conda-forge TensorRT 11 through recipes/tensorrt-conda-forge; Jetson keeps the
-    # native NVIDIA payload in recipes/tensorrt.
+    # conda-forge TensorRT 11 through recipes/foundation/tensorrt-conda-forge; Jetson keeps the
+    # native NVIDIA payload in recipes/foundation/tensorrt.
     #
     # Its Triton sibling used to be blocked by a private-artifactory FetchContent URL;
-    # recipes/triton-server plus the patch below replace that hidden input.
-    ("ros-jazzy-isaac-ros-tensor-rt", "isaac_ros_dnn_inference", "isaac_ros_tensor_rt"),
-    # The public x86_64 server tarball is missing upstream, but recipes/triton-server
+    # recipes/foundation/triton-server plus the patch below replace that hidden input.
+    (ROS + "isaac-ros-tensor-rt", "isaac_ros_dnn_inference", "isaac_ros_tensor_rt"),
+    # The public x86_64 server tarball is missing upstream, but recipes/foundation/triton-server
     # now builds the C API from source. A small patch replaces FetchContent with its
     # exported CMake target.
-    ("ros-jazzy-isaac-ros-triton", "isaac_ros_dnn_inference", "isaac_ros_triton"),
+    (ROS + "isaac-ros-triton", "isaac_ros_dnn_inference", "isaac_ros_triton"),
     # --- the previously unattempted packages, first batch -------------------------
     #
     # Everything here is in a repo already cached, needs no new REPOS entry, and follows a
@@ -340,13 +386,13 @@ PACKAGES = [
     #
     # -- text being read as an object file. Compiling its sources cannot help when the blob
     # they link against is not published, so all nine go through gen_repack.py. This is the
-    ("ros-jazzy-isaac-ros-apriltag-interfaces", "isaac_ros_common", "isaac_ros_apriltag_interfaces"),
-    ("ros-jazzy-isaac-ros-nova-interfaces", "isaac_ros_common", "isaac_ros_nova_interfaces"),
-    ("ros-jazzy-isaac-ros-test-cmake", "isaac_ros_common", "isaac_ros_test_cmake"),
-    ("ros-jazzy-isaac-ros-nitros-bridge-ros2", "isaac_ros_nitros", "isaac_ros_nitros_bridge/isaac_ros_nitros_bridge_ros2"),
-    ("ros-jazzy-isaac-ros-stereo-image-proc", "isaac_ros_image_pipeline", "isaac_ros_stereo_image_proc"),
-    ("ros-jazzy-isaac-ros-depth-image-proc", "isaac_ros_image_pipeline", "isaac_ros_depth_image_proc"),
-    ("ros-jazzy-isaac-ros-image-pipeline", "isaac_ros_image_pipeline", "isaac_ros_image_pipeline"),
+    (ROS + "isaac-ros-apriltag-interfaces", "isaac_ros_common", "isaac_ros_apriltag_interfaces"),
+    (ROS + "isaac-ros-nova-interfaces", "isaac_ros_common", "isaac_ros_nova_interfaces"),
+    (ROS + "isaac-ros-test-cmake", "isaac_ros_common", "isaac_ros_test_cmake"),
+    (ROS + "isaac-ros-nitros-bridge-ros2", "isaac_ros_nitros", "isaac_ros_nitros_bridge/isaac_ros_nitros_bridge_ros2"),
+    (ROS + "isaac-ros-stereo-image-proc", "isaac_ros_image_pipeline", "isaac_ros_stereo_image_proc"),
+    (ROS + "isaac-ros-depth-image-proc", "isaac_ros_image_pipeline", "isaac_ros_depth_image_proc"),
+    (ROS + "isaac-ros-image-pipeline", "isaac_ros_image_pipeline", "isaac_ros_image_pipeline"),
     # --- mapping and localization ---------------------------------------------------
     #
     # Two of this repo's four packages. The other two -- isaac_mapping_ros and
@@ -355,29 +401,29 @@ PACKAGES = [
     # plus five ament_target_dependencies() against it. No such package exists at v4.5-0 in
     # this repo or anywhere else in the 4.5 source set, so neither can configure. That is a
     # dangling dependency upstream rather than anything missing here -- ISSUES.md #22.
-    ("ros-jazzy-isaac-ros-pointcloud-utils", "isaac_ros_mapping_and_localization", "isaac_ros_pointcloud_utils"),
-    ("ros-jazzy-isaac-ros-occupancy-grid-localizer", "isaac_ros_mapping_and_localization", "isaac_ros_occupancy_grid_localizer"),
+    (ROS + "isaac-ros-pointcloud-utils", "isaac_ros_mapping_and_localization", "isaac_ros_pointcloud_utils"),
+    (ROS + "isaac-ros-occupancy-grid-localizer", "isaac_ros_mapping_and_localization", "isaac_ros_occupancy_grid_localizer"),
     # --- nvblox --------------------------------------------------------------------
     #
     # nvblox_msgs was already built for cuMotion; this is the rest of the repo. Leaves
     # first, the metapackage last. nvblox_test is absent because it requires the test
     # datasets as build inputs; nvblox_examples_bringup is included with its unavailable
     # optional Triton launch backend omitted from runtime dependencies below.
-    ("ros-jazzy-nvblox-ros-common", "isaac_ros_nvblox", "nvblox_ros_common"),
-    ("ros-jazzy-nvblox-ros-python-utils", "isaac_ros_nvblox", "nvblox_ros_python_utils"),
-    ("ros-jazzy-nvblox-test-data", "isaac_ros_nvblox", "nvblox_test_data"),
-    ("ros-jazzy-nvblox-message-adapters", "isaac_ros_nvblox", "nvblox_message_adapters"),
-    ("ros-jazzy-nvblox-nav2", "isaac_ros_nvblox", "nvblox_nav2"),
-    ("ros-jazzy-nvblox-rviz-plugin", "isaac_ros_nvblox", "nvblox_rviz_plugin"),
-    ("ros-jazzy-realsense-splitter", "isaac_ros_nvblox", "nvblox_examples/realsense_splitter"),
-    ("ros-jazzy-multi-realsense-emitter-synchronizer", "isaac_ros_nvblox", "nvblox_examples/multi_realsense_emitter_synchronizer"),
-    ("ros-jazzy-semantic-label-conversion", "isaac_ros_nvblox", "nvblox_examples/semantic_label_conversion"),
-    ("ros-jazzy-nvblox-image-padding", "isaac_ros_nvblox", "nvblox_examples/nvblox_image_padding"),
-    ("ros-jazzy-cuvslam-vendor", "isaac_ros_nitros", "cuvslam_vendor"),
-    ("ros-jazzy-isaac-ros-cuvslam", "isaac_ros_visual_slam", "isaac_ros_cuvslam"),
-    ("ros-jazzy-nvblox-examples-bringup", "isaac_ros_nvblox", "nvblox_examples/nvblox_examples_bringup"),
-    ("ros-jazzy-nvblox-ros", "isaac_ros_nvblox", "nvblox_ros"),
-    ("ros-jazzy-isaac-ros-nvblox", "isaac_ros_nvblox", "isaac_ros_nvblox"),
+    (ROS + "nvblox-ros-common", "isaac_ros_nvblox", "nvblox_ros_common"),
+    (ROS + "nvblox-ros-python-utils", "isaac_ros_nvblox", "nvblox_ros_python_utils"),
+    (ROS + "nvblox-test-data", "isaac_ros_nvblox", "nvblox_test_data"),
+    (ROS + "nvblox-message-adapters", "isaac_ros_nvblox", "nvblox_message_adapters"),
+    (ROS + "nvblox-nav2", "isaac_ros_nvblox", "nvblox_nav2"),
+    (ROS + "nvblox-rviz-plugin", "isaac_ros_nvblox", "nvblox_rviz_plugin"),
+    (ROS + "realsense-splitter", "isaac_ros_nvblox", "nvblox_examples/realsense_splitter"),
+    (ROS + "multi-realsense-emitter-synchronizer", "isaac_ros_nvblox", "nvblox_examples/multi_realsense_emitter_synchronizer"),
+    (ROS + "semantic-label-conversion", "isaac_ros_nvblox", "nvblox_examples/semantic_label_conversion"),
+    (ROS + "nvblox-image-padding", "isaac_ros_nvblox", "nvblox_examples/nvblox_image_padding"),
+    (ROS + "cuvslam-vendor", "isaac_ros_nitros", "cuvslam_vendor"),
+    (ROS + "isaac-ros-cuvslam", "isaac_ros_visual_slam", "isaac_ros_cuvslam"),
+    (ROS + "nvblox-examples-bringup", "isaac_ros_nvblox", "nvblox_examples/nvblox_examples_bringup"),
+    (ROS + "nvblox-ros", "isaac_ros_nvblox", "nvblox_ros"),
+    (ROS + "isaac-ros-nvblox", "isaac_ros_nvblox", "isaac_ros_nvblox"),
     # --- eight more repos, in dependency order -------------------------------------
     #
     # Ordered by hand from packages.json's internal_closure, so a sequential build
@@ -388,13 +434,13 @@ PACKAGES = [
     # ever packaged -- the node itself was reached through the deb overlay and never got a
     # recipe. Its whole closure (nitros, managed_nitros, the image type adapters,
     # isaac_ros_image_proc) has been built for weeks.
-    ("ros-jazzy-cuapriltags-vendor", "isaac_ros_nitros", "cuapriltags_vendor"),
-    ("ros-jazzy-isaac-ros-apriltag", "isaac_ros_apriltag", "isaac_ros_apriltag"),
+    (ROS + "cuapriltags-vendor", "isaac_ros_nitros", "cuapriltags_vendor"),
+    (ROS + "isaac-ros-apriltag", "isaac_ros_apriltag", "isaac_ros_apriltag"),
     # The encoder, beside the decoder that was built long ago. Same repo, same NVENC/NVDEC
     # family, and it inherits the CUDA-header fix README.md describes for the decoder.
-    ("ros-jazzy-isaac-ros-h264-encoder", "isaac_ros_compression", "isaac_ros_h264_encoder"),
-    ("ros-jazzy-isaac-teleop-core", "isaac_ros_teleop", "isaac_teleop_core"),
-    ("ros-jazzy-isaac-ros-teleop", "isaac_ros_teleop", "isaac_ros_teleop"),
+    (ROS + "isaac-ros-h264-encoder", "isaac_ros_compression", "isaac_ros_h264_encoder"),
+    (ROS + "isaac-teleop-core", "isaac_ros_teleop", "isaac_teleop_core"),
+    (ROS + "isaac-ros-teleop", "isaac_ros_teleop", "isaac_ros_teleop"),
     # --- stereo depth: ESS and FoundationStereo -----------------------------------
     #
     # packages.json marks three of these five `needs_new_ros_pkg`, which resolved to
@@ -404,12 +450,12 @@ PACKAGES = [
     # node rather than a header. Model-install packages come first because both consumers
     # <depend> on them, and ament_auto_find_build_dependencies() makes that a REQUIRED
     # find_package -- the same ordering constraint isaac_ros_foundationpose had.
-    ("ros-jazzy-isaac-ros-dnn-stereo-decoder", "isaac_ros_dnn_stereo_depth", "isaac_ros_dnn_stereo_decoder"),
-    ("ros-jazzy-isaac-ros-ess-models-install", "isaac_ros_dnn_stereo_depth", "isaac_ros_ess_models_install"),
-    ("ros-jazzy-isaac-ros-foundationstereo-models-install", "isaac_ros_dnn_stereo_depth",
+    (ROS + "isaac-ros-dnn-stereo-decoder", "isaac_ros_dnn_stereo_depth", "isaac_ros_dnn_stereo_decoder"),
+    (ROS + "isaac-ros-ess-models-install", "isaac_ros_dnn_stereo_depth", "isaac_ros_ess_models_install"),
+    (ROS + "isaac-ros-foundationstereo-models-install", "isaac_ros_dnn_stereo_depth",
      "isaac_ros_foundationstereo_models_install"),
-    ("ros-jazzy-isaac-ros-ess", "isaac_ros_dnn_stereo_depth", "isaac_ros_ess"),
-    ("ros-jazzy-isaac-ros-foundationstereo", "isaac_ros_dnn_stereo_depth", "isaac_ros_foundationstereo"),
+    (ROS + "isaac-ros-ess", "isaac_ros_dnn_stereo_depth", "isaac_ros_ess"),
+    (ROS + "isaac-ros-foundationstereo", "isaac_ros_dnn_stereo_depth", "isaac_ros_foundationstereo"),
     # --- image segmentation: the Triton label is wrong here too --------------------
     #
     # packages.json marks five of these six `triton`, and this is the third repo in a row
@@ -422,22 +468,22 @@ PACKAGES = [
     #
     # Triton is packaged now; these packages remain independently installable because
     # their manifests correctly describe it as an optional runtime backend.
-    ("ros-jazzy-isaac-ros-unet-kernels", "isaac_ros_image_segmentation", "isaac_ros_unet_kernels"),
-    ("ros-jazzy-isaac-ros-unet", "isaac_ros_image_segmentation", "isaac_ros_unet"),
-    ("ros-jazzy-isaac-ros-peoplesemseg-models-install", "isaac_ros_image_segmentation",
+    (ROS + "isaac-ros-unet-kernels", "isaac_ros_image_segmentation", "isaac_ros_unet_kernels"),
+    (ROS + "isaac-ros-unet", "isaac_ros_image_segmentation", "isaac_ros_unet"),
+    (ROS + "isaac-ros-peoplesemseg-models-install", "isaac_ros_image_segmentation",
      "isaac_ros_peoplesemseg_models_install"),
-    ("ros-jazzy-isaac-ros-segformer", "isaac_ros_image_segmentation", "isaac_ros_segformer"),
-    ("ros-jazzy-isaac-ros-segment-anything", "isaac_ros_image_segmentation", "isaac_ros_segment_anything"),
-    ("ros-jazzy-isaac-ros-segment-anything2", "isaac_ros_image_segmentation", "isaac_ros_segment_anything2"),
+    (ROS + "isaac-ros-segformer", "isaac_ros_image_segmentation", "isaac_ros_segformer"),
+    (ROS + "isaac-ros-segment-anything", "isaac_ros_image_segmentation", "isaac_ros_segment_anything"),
+    (ROS + "isaac-ros-segment-anything2", "isaac_ros_image_segmentation", "isaac_ros_segment_anything2"),
     # --- the rest of cuMotion ------------------------------------------------------
     #
     # isaac_ros_cumotion_controllers is not here: it needs isaac_ros_inverse_dynamics,
     # which lives in isaac_ros_deploy and is the only thing standing between this repo and
     # a complete isaac_ros_cumotion.
-    ("ros-jazzy-isaac-ros-cumotion-examples", "isaac_ros_cumotion", "isaac_ros_cumotion_examples"),
-    ("ros-jazzy-isaac-ros-cumotion-robot-segmenter", "isaac_ros_cumotion", "isaac_ros_cumotion_robot_segmenter"),
+    (ROS + "isaac-ros-cumotion-examples", "isaac_ros_cumotion", "isaac_ros_cumotion_examples"),
+    (ROS + "isaac-ros-cumotion-robot-segmenter", "isaac_ros_cumotion", "isaac_ros_cumotion_robot_segmenter"),
     # --- small python tool repos ---------------------------------------------------
-    ("ros-jazzy-isaac-ros-tensor-inspector", "isaac_ros_data_tools", "isaac_ros_tensor_inspector"),
+    (ROS + "isaac-ros-tensor-inspector", "isaac_ros_data_tools", "isaac_ros_tensor_inspector"),
     # Only the service interfaces, which are a plain rosidl package.
     #
     # isaac_ros_jetson_stats itself is left out, and not because it is Jetson-only: it
@@ -445,16 +491,16 @@ PACKAGES = [
     # has no such package. A recipe would generate cleanly and then fail to solve. It is
     # the one genuinely missing dependency found in this whole pass, and it is worth
     # little -- jtop reads tegrastats, so the node cannot function on x86_64 anyway.
-    ("ros-jazzy-isaac-ros-jetson-stats-services", "isaac_ros_jetson", "isaac_ros_jetson_stats_services"),
+    (ROS + "isaac-ros-jetson-stats-services", "isaac_ros_jetson", "isaac_ros_jetson_stats_services"),
     # --- the example launch packages -----------------------------------------------
     #
     # Four ament_python packages that are launch-file collections. isaac_ros_realsense,
     # _usb_cam and _zed each want a camera driver at *runtime* that RoboStack does not
     # carry; none of that is a build dependency, so the packages themselves are cheap.
-    ("ros-jazzy-isaac-ros-examples", "isaac_ros_examples", "isaac_ros_examples"),
-    ("ros-jazzy-isaac-ros-realsense", "isaac_ros_examples", "isaac_ros_realsense"),
-    ("ros-jazzy-isaac-ros-usb-cam", "isaac_ros_examples", "isaac_ros_usb_cam"),
-    ("ros-jazzy-isaac-ros-zed", "isaac_ros_examples", "isaac_ros_zed"),
+    (ROS + "isaac-ros-examples", "isaac_ros_examples", "isaac_ros_examples"),
+    (ROS + "isaac-ros-realsense", "isaac_ros_examples", "isaac_ros_realsense"),
+    (ROS + "isaac-ros-usb-cam", "isaac_ros_examples", "isaac_ros_usb_cam"),
+    (ROS + "isaac-ros-zed", "isaac_ros_examples", "isaac_ros_zed"),
     # --- isaac_ros_cloud_control, all thirteen -------------------------------------
     #
     # The largest untouched repo with no recorded blocker on any of its packages, and the
@@ -463,20 +509,20 @@ PACKAGES = [
     # nothing NVIDIA-proprietary underneath -- no GXF, no NITROS type adapter, no CUDA.
     # The order below is the topological one; vda5050_msgs has to lead because five of the
     # others generate against it.
-    ("ros-jazzy-vda5050-msgs", "isaac_ros_cloud_control", "vda5050_msgs"),
-    ("ros-jazzy-isaac-ros-cloud-control-interface", "isaac_ros_cloud_control", "isaac_ros_cloud_control_interface"),
-    ("ros-jazzy-isaac-ros-scene-recorder-interface", "isaac_ros_cloud_control", "isaac_ros_scene_recorder_interface"),
-    ("ros-jazzy-isaac-ros-json-info-generator", "isaac_ros_cloud_control", "isaac_ros_json_info_generator"),
-    ("ros-jazzy-isaac-ros-mega-controller", "isaac_ros_cloud_control", "isaac_ros_mega_controller"),
-    ("ros-jazzy-isaac-ros-mega-node-monitor", "isaac_ros_cloud_control", "isaac_ros_mega_node_monitor"),
-    ("ros-jazzy-isaac-ros-mqtt-bridge", "isaac_ros_cloud_control", "isaac_ros_mqtt_bridge"),
-    ("ros-jazzy-vda5050-action-handler", "isaac_ros_cloud_control", "vda5050_action_handler"),
-    ("ros-jazzy-isaac-ros-vda5050-client", "isaac_ros_cloud_control", "isaac_ros_vda5050_client"),
-    ("ros-jazzy-isaac-ros-scene-recorder", "isaac_ros_cloud_control", "isaac_ros_scene_recorder"),
-    ("ros-jazzy-vda5050-action-handler-plugins", "isaac_ros_cloud_control", "vda5050_action_handler_plugins"),
-    ("ros-jazzy-isaac-ros-vda5050-client-bringup", "isaac_ros_cloud_control", "isaac_ros_vda5050_client_bringup"),
-    ("ros-jazzy-isaac-ros-mission-client", "isaac_ros_cloud_control", "isaac_ros_mission_client"),
-    ("ros-jazzy-isaac-ros-humanoid-task-server", "isaac_ros_cloud_control", "isaac_ros_humanoid_task_server"),
+    (ROS + "vda5050-msgs", "isaac_ros_cloud_control", "vda5050_msgs"),
+    (ROS + "isaac-ros-cloud-control-interface", "isaac_ros_cloud_control", "isaac_ros_cloud_control_interface"),
+    (ROS + "isaac-ros-scene-recorder-interface", "isaac_ros_cloud_control", "isaac_ros_scene_recorder_interface"),
+    (ROS + "isaac-ros-json-info-generator", "isaac_ros_cloud_control", "isaac_ros_json_info_generator"),
+    (ROS + "isaac-ros-mega-controller", "isaac_ros_cloud_control", "isaac_ros_mega_controller"),
+    (ROS + "isaac-ros-mega-node-monitor", "isaac_ros_cloud_control", "isaac_ros_mega_node_monitor"),
+    (ROS + "isaac-ros-mqtt-bridge", "isaac_ros_cloud_control", "isaac_ros_mqtt_bridge"),
+    (ROS + "vda5050-action-handler", "isaac_ros_cloud_control", "vda5050_action_handler"),
+    (ROS + "isaac-ros-vda5050-client", "isaac_ros_cloud_control", "isaac_ros_vda5050_client"),
+    (ROS + "isaac-ros-scene-recorder", "isaac_ros_cloud_control", "isaac_ros_scene_recorder"),
+    (ROS + "vda5050-action-handler-plugins", "isaac_ros_cloud_control", "vda5050_action_handler_plugins"),
+    (ROS + "isaac-ros-vda5050-client-bringup", "isaac_ros_cloud_control", "isaac_ros_vda5050_client_bringup"),
+    (ROS + "isaac-ros-mission-client", "isaac_ros_cloud_control", "isaac_ros_mission_client"),
+    (ROS + "isaac-ros-humanoid-task-server", "isaac_ros_cloud_control", "isaac_ros_humanoid_task_server"),
     # --- isaac_ros_deploy, and what it unblocks -------------------------------------
     #
     # Ordered by a topological sort over the five repos' package.xml files rather than by
@@ -487,17 +533,17 @@ PACKAGES = [
     # packages.json marks four of these seven `triton`, which is a transitive label rather
     # than a direct one: only isaac_ros_deploy_converters and _bringup name
     # isaac_ros_triton at all, both as <exec_depend>. DROP_DEPS handles those two.
-    ("ros-jazzy-isaac-deploy-core", "isaac_ros_deploy", "isaac_deploy/isaac_deploy_core"),
-    ("ros-jazzy-isaac-ros-deploy-interfaces", "isaac_ros_deploy", "isaac_deploy/isaac_ros_deploy_interfaces"),
-    ("ros-jazzy-isaac-ros-inverse-dynamics", "isaac_ros_deploy", "isaac_deploy/isaac_ros_inverse_dynamics"),
-    ("ros-jazzy-isaac-ros-deploy-converters", "isaac_ros_deploy", "isaac_deploy/isaac_ros_deploy_converters"),
-    ("ros-jazzy-isaac-ros-deploy-ros2-control", "isaac_ros_deploy", "isaac_deploy/isaac_ros_deploy_ros2_control"),
-    ("ros-jazzy-isaac-ros-deploy-bringup", "isaac_ros_deploy", "isaac_deploy/isaac_ros_deploy_bringup"),
-    ("ros-jazzy-isaac-ros-deploy", "isaac_ros_deploy", "isaac_ros_deploy"),
-    ("ros-jazzy-isaac-ros-deploy-reference-applications", "isaac_ros_deploy",
+    (ROS + "isaac-deploy-core", "isaac_ros_deploy", "isaac_deploy/isaac_deploy_core"),
+    (ROS + "isaac-ros-deploy-interfaces", "isaac_ros_deploy", "isaac_deploy/isaac_ros_deploy_interfaces"),
+    (ROS + "isaac-ros-inverse-dynamics", "isaac_ros_deploy", "isaac_deploy/isaac_ros_inverse_dynamics"),
+    (ROS + "isaac-ros-deploy-converters", "isaac_ros_deploy", "isaac_deploy/isaac_ros_deploy_converters"),
+    (ROS + "isaac-ros-deploy-ros2-control", "isaac_ros_deploy", "isaac_deploy/isaac_ros_deploy_ros2_control"),
+    (ROS + "isaac-ros-deploy-bringup", "isaac_ros_deploy", "isaac_deploy/isaac_ros_deploy_bringup"),
+    (ROS + "isaac-ros-deploy", "isaac_ros_deploy", "isaac_ros_deploy"),
+    (ROS + "isaac-ros-deploy-reference-applications", "isaac_ros_deploy",
      "isaac_deploy/isaac_ros_deploy_reference_applications"),
     # The last isaac_ros_cumotion package, reachable now that inverse_dynamics is above it.
-    ("ros-jazzy-isaac-ros-cumotion-controllers", "isaac_ros_cumotion", "isaac_ros_cumotion_controllers"),
+    (ROS + "isaac-ros-cumotion-controllers", "isaac_ros_cumotion", "isaac_ros_cumotion_controllers"),
     # --- learned policies, robots, physical AI --------------------------------------
     #
     # Every external dependency of these three repos resolves from robostack-jazzy --
@@ -506,21 +552,21 @@ PACKAGES = [
     #
     # unitree_g1_bridge uses only Unitree's public ROS messages, not the native SDK.
     # Package that interface directly from unitree_ros2, then build the Python bridge.
-    ("ros-jazzy-unitree-api", "unitree_ros2", "cyclonedds_ws/src/unitree/unitree_api"),
-    ("ros-jazzy-isaac-ros-agile-unitree-g1", "isaac_ros_learned_policies", "isaac_ros_agile_unitree_g1"),
-    ("ros-jazzy-isaac-ros-franka-fr3-reach", "isaac_ros_learned_policies", "isaac_ros_franka_fr3_reach"),
-    ("ros-jazzy-isaac-ros-robots-tools", "isaac_ros_robots", "isaac_ros_robots_tools"),
-    ("ros-jazzy-unitree-g1-description", "isaac_ros_robots", "unitree_g1/unitree_g1_description"),
-    ("ros-jazzy-unitree-hg-ros2-control", "isaac_ros_robots", "unitree_hg/unitree_hg_ros2_control"),
-    ("ros-jazzy-unitree-g1-bringup", "isaac_ros_robots", "unitree_g1/unitree_g1_bringup"),
-    ("ros-jazzy-isaac-ros-data-flywheel", "isaac_ros_physical_ai", "isaac_ros_data_flywheel"),
+    (ROS + "unitree-api", "unitree_ros2", "cyclonedds_ws/src/unitree/unitree_api"),
+    (ROS + "isaac-ros-agile-unitree-g1", "isaac_ros_learned_policies", "isaac_ros_agile_unitree_g1"),
+    (ROS + "isaac-ros-franka-fr3-reach", "isaac_ros_learned_policies", "isaac_ros_franka_fr3_reach"),
+    (ROS + "isaac-ros-robots-tools", "isaac_ros_robots", "isaac_ros_robots_tools"),
+    (ROS + "unitree-g1-description", "isaac_ros_robots", "unitree_g1/unitree_g1_description"),
+    (ROS + "unitree-hg-ros2-control", "isaac_ros_robots", "unitree_hg/unitree_hg_ros2_control"),
+    (ROS + "unitree-g1-bringup", "isaac_ros_robots", "unitree_g1/unitree_g1_bringup"),
+    (ROS + "isaac-ros-data-flywheel", "isaac_ros_physical_ai", "isaac_ros_data_flywheel"),
     # isaac_ros_sipl_camera is deliberately absent on linux-64. Its CMakeLists returns
     # before ament_package() unless CMAKE_SYSTEM_PROCESSOR is aarch64, so an x86_64 build
     # installs zero files. SIPL is NVIDIA DRIVE's ARM64-only camera SDK; publishing an
     # empty package here would falsely claim that the node exists.
     # The Thor/RealSense mounting rig is different: it is platform-independent URDF and
     # mesh data from a separately documented, tagged Isaac ROS 5.0 repository.
-    ("ros-jazzy-thor-devkit-realsense-rig-description", "sensor_mounting_rig",
+    (ROS + "thor-devkit-realsense-rig-description", "sensor_mounting_rig",
      "thor_devkit_realsense_rig_description"),
     # --- the benchmark suite: 25 of its 29 packages --------------------------------
     #
@@ -537,54 +583,54 @@ PACKAGES = [
     #
     # The final four benchmarks require isaac_ros_triton as a real <depend>. They become
     # buildable now that the packaged Triton core replaces NVIDIA's private tarball.
-    ("ros-jazzy-isaac-ros-apriltag-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_apriltag_benchmark"),
-    ("ros-jazzy-isaac-ros-centerpose-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_centerpose_benchmark"),
-    ("ros-jazzy-isaac-ros-dnn-image-encoder-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-apriltag-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_apriltag_benchmark"),
+    (ROS + "isaac-ros-centerpose-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_centerpose_benchmark"),
+    (ROS + "isaac-ros-dnn-image-encoder-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_dnn_image_encoder_benchmark"),
-    ("ros-jazzy-isaac-ros-dope-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_dope_benchmark"),
-    ("ros-jazzy-isaac-ros-ess-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_ess_benchmark"),
-    ("ros-jazzy-isaac-ros-foundationpose-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-dope-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_dope_benchmark"),
+    (ROS + "isaac-ros-ess-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_ess_benchmark"),
+    (ROS + "isaac-ros-foundationpose-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_foundationpose_benchmark"),
-    ("ros-jazzy-isaac-ros-foundationstereo-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-foundationstereo-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_foundationstereo_benchmark"),
-    ("ros-jazzy-isaac-ros-grounding-dino-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-grounding-dino-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_grounding_dino_benchmark"),
-    ("ros-jazzy-isaac-ros-h264-decoder-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-h264-decoder-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_h264_decoder_benchmark"),
-    ("ros-jazzy-isaac-ros-h264-encoder-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-h264-encoder-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_h264_encoder_benchmark"),
-    ("ros-jazzy-isaac-ros-occupancy-grid-localizer-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-occupancy-grid-localizer-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_occupancy_grid_localizer_benchmark"),
-    ("ros-jazzy-isaac-ros-rtdetr-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_rtdetr_benchmark"),
-    ("ros-jazzy-isaac-ros-segformer-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_segformer_benchmark"),
-    ("ros-jazzy-isaac-ros-detectnet-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-rtdetr-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_rtdetr_benchmark"),
+    (ROS + "isaac-ros-segformer-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_segformer_benchmark"),
+    (ROS + "isaac-ros-detectnet-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_detectnet_benchmark"),
-    ("ros-jazzy-isaac-ros-segment-anything-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-segment-anything-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_segment_anything_benchmark"),
-    ("ros-jazzy-isaac-ros-segment-anything2-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-segment-anything2-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_segment_anything2_benchmark"),
-    ("ros-jazzy-isaac-ros-triton-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-triton-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_triton_benchmark"),
-    ("ros-jazzy-isaac-ros-stereo-image-proc-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-stereo-image-proc-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_stereo_image_proc_benchmark"),
-    ("ros-jazzy-isaac-ros-tensor-rt-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_tensor_rt_benchmark"),
-    ("ros-jazzy-isaac-ros-unet-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_unet_benchmark"),
+    (ROS + "isaac-ros-tensor-rt-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_tensor_rt_benchmark"),
+    (ROS + "isaac-ros-unet-benchmark", "isaac_ros_benchmark", "benchmarks/isaac_ros_unet_benchmark"),
     # The MoveIt planning benchmarks: the harness, then the robot descriptions, then the four
     # planner comparisons that use them. isaac_ros_franka_* and isaac_ros_ur5_* each pit
     # cuMotion against OMPL on the same scene.
-    ("ros-jazzy-isaac-ros-moveit-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-moveit-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_moveit_benchmark/isaac_ros_moveit_benchmark"),
-    ("ros-jazzy-ur5-gripper-moveit-config", "isaac_ros_benchmark",
+    (ROS + "ur5-gripper-moveit-config", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_moveit_benchmark/robot_configs/ur5_gripper_moveit_config"),
-    ("ros-jazzy-ur5-robotiq-85-description", "isaac_ros_benchmark",
+    (ROS + "ur5-robotiq-85-description", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_moveit_benchmark/robot_descriptions/ur5_robotiq_85_description"),
-    ("ros-jazzy-isaac-ros-franka-cumotion-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-franka-cumotion-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_moveit_benchmark/isaac_ros_moveit_robot_benchmark/franka/isaac_ros_franka_cumotion_benchmark"),
-    ("ros-jazzy-isaac-ros-franka-ompl-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-franka-ompl-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_moveit_benchmark/isaac_ros_moveit_robot_benchmark/franka/isaac_ros_franka_ompl_benchmark"),
-    ("ros-jazzy-isaac-ros-ur5-cumotion-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-ur5-cumotion-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_moveit_benchmark/isaac_ros_moveit_robot_benchmark/ur5/isaac_ros_ur5_cumotion_benchmark"),
-    ("ros-jazzy-isaac-ros-ur5-ompl-benchmark", "isaac_ros_benchmark",
+    (ROS + "isaac-ros-ur5-ompl-benchmark", "isaac_ros_benchmark",
      "benchmarks/isaac_ros_moveit_benchmark/isaac_ros_moveit_robot_benchmark/ur5/isaac_ros_ur5_ompl_benchmark"),
     # Complete the manipulation stack after every package used by its reference launch
     # graph is available. The asset package installs the on-target model setup utility;
@@ -621,16 +667,16 @@ TRAIT_DEPS = {
     # The constraint is stricter than the ABI. What crosses the boundary is
     # Eigen::Matrix<double,3,1,0,3,1> and Eigen::Quaternion<double,0> by const reference:
     # identical template signature (hence the symbols link) and identical layout in both
-    # versions. recipes/ros-jazzy-isaac-ros-nitros/build.sh removes the floor from the
+    # versions. recipes/ros/isaac-ros-nitros/build.sh removes the floor from the
     # installed config, and manip/ik.sh + manip/fk_check.py check the consequence -- cuMotion
     # returns the same 26 IK solutions and lands 0.000 mm from the requested pose. See
     # ISSUES.md #13.
     "eigen":  ["eigen"],
     "vpi":    ["vpi"],
     "yamlcpp": ["yaml-cpp"],
-    "rosidl": ["ros-jazzy-rosidl-default-generators", "ros-jazzy-rosidl-default-runtime"],
+    "rosidl": [ROS + "rosidl-default-generators", ROS + "rosidl-default-runtime"],
     "python": ["python", "pyyaml"],
-    "ament_auto": ["ros-jazzy-ament-cmake-auto"],
+    "ament_auto": [ROS + "ament-cmake-auto"],
     "opencv": ["libopencv 4.13.*"],
     # Pinned, and both bounds are load-bearing. conda-forge's libcvcuda-dev 0.16
     # ships lib/cmake/{cvcuda,nvcv_types}/*-config.cmake; 0.17 makes DataType's
@@ -656,17 +702,30 @@ TRAIT_DEPS = {
 # the CMakeLists by pattern -- they come from ament_target_dependencies() naming a
 # package that ament_auto_find_build_dependencies() was never told to find.
 EXTRA_DEPS = {
-    # This dependency is conditional on ROS_DISTRO != lyrical. The generic parser skips
-    # conditional manifest entries; Isaac Forge targets Jazzy, whose CMake requires it.
-    "ros-jazzy-isaac-deploy-core": ["ros-jazzy-tl-expected"],
     # Upstream's manifest omits rosidl_buffer although CMake requires it directly.
-    "ros-jazzy-rosidl-buffer-backend-registry": ["ros-jazzy-rosidl-buffer"],
+    ROS + "rosidl-buffer-backend-registry": [ROS + "rosidl-buffer"],
     # reshape_node calls
     #   ament_target_dependencies(reshape_node rclcpp rclcpp_components isaac_ros_cvcuda_utils)
     # and package.xml never mentions isaac_ros_cvcuda_utils. ament_target_dependencies
     # hard-errors on a package find_package() has not located, so configure fails outright
     # rather than degrading. See ISSUES.md.
-    "ros-jazzy-isaac-ros-tensor-proc": ["ros-jazzy-isaac-ros-cvcuda-utils"],
+    ROS + "isaac-ros-tensor-proc": [ROS + "isaac-ros-cvcuda-utils"],
+}
+
+# Packages not built for a distro, with the reason. Keyed by conda package name ->
+# {distro: why}. Emitted as `skip:` so the recipe still renders for that distro.
+SKIP = {
+    # RoboStack builds these from the Lyrical rosdistro release; ours would shadow them.
+    ROS + "rosidl-buffer": {"lyrical": "in robostack-lyrical"},
+    ROS + "rosidl-buffer-backend": {"lyrical": "in robostack-lyrical"},
+    ROS + "rosidl-buffer-backend-registry": {"lyrical": "in robostack-lyrical"},
+    # Dependencies robostack-lyrical does not ship yet. Drop these once it does.
+    ROS + "multi-realsense-emitter-synchronizer": {
+        "lyrical": "needs realsense2_camera_msgs, not in robostack-lyrical yet"},
+    ROS + "realsense-splitter": {
+        "lyrical": "needs realsense2_camera_msgs, not in robostack-lyrical yet"},
+    ROS + "isaac-ros-cumotion-examples": {
+        "lyrical": "needs moveit2_tutorials, not in robostack-lyrical yet"},
 }
 
 # Declared dependencies deliberately left out, with the reason. Keyed by conda package
@@ -680,18 +739,18 @@ EXTRA_DEPS = {
 DROP_DEPS = {
     # ament_cmake_ros_core is newer than Jazzy; these targets only use it to select C++20,
     # which the accompanying patches request directly from CMake.
-    "ros-jazzy-rosidl-buffer": {
+    ROS + "rosidl-buffer": {
         "ament_cmake_ros_core": "replaced by target_compile_features(cxx_std_20)",
     },
-    "ros-jazzy-rosidl-buffer-backend-registry": {
+    ROS + "rosidl-buffer-backend-registry": {
         "ament_cmake_ros_core": "replaced by target_compile_features(cxx_std_20)",
     },
     # A Python bridge generates no interfaces. Upstream carries this as build metadata,
     # but keeping it would unnecessarily install a code generator at runtime.
-    "ros-jazzy-unitree-g1-bridge": {
+    ROS + "unitree-g1-bridge": {
         "rosidl_generator_dds_idl": "build-only generator unused by this ament_python package",
     },
-    "ros-jazzy-isaac-ros-foundationpose": {
+    ROS + "isaac-ros-foundationpose": {
         # The three inference/perception stages of NVIDIA's reference launch graph, all
         # of which need TensorRT. The FoundationPose node consumes their *topics*; it
         # neither links nor dlopens them, and its own two engine files are loaded by a
@@ -713,13 +772,13 @@ DROP_DEPS = {
     # all that is needed.
     # flexiv_msgs is in neither RoboStack distro. Only the Flexiv hardware scripts import
     # it; the Isaac Sim variant of the reference application runs without it.
-    "ros-jazzy-isaac-ros-deploy-reference-applications": {
+    ROS + "isaac-ros-deploy-reference-applications": {
         "flexiv_msgs": "not in RoboStack; only the Flexiv hardware scripts use it",
     },
-    "ros-jazzy-isaac-ros-dope": {
+    ROS + "isaac-ros-dope": {
         "isaac_ros_tensor_rt": "needs TensorRT; a separate node in the launch graph",
     },
-    "ros-jazzy-isaac-ros-centerpose": {
+    ROS + "isaac-ros-centerpose": {
         "isaac_ros_tensor_rt": "needs TensorRT; one of two interchangeable backends",
         "isaac_ros_triton": "needs Triton; the other backend",
     },
@@ -732,44 +791,44 @@ DROP_DEPS = {
     # Triton is unobtainable for the reason in ISSUES.md #21 -- isaac_ros_triton defaults
     # x86_64 to a tarball on an internal NVIDIA host -- and unlike the TensorRT cases
     # above there is no prospect of packaging it. Each of these four ships a TensorRT
-    # launch path as well, and recipes/tensorrt supplies that, so what is lost is the
+    # launch path as well, and recipes/foundation/tensorrt supplies that, so what is lost is the
     # Triton variant of the pipeline rather than the node.
-    "ros-jazzy-isaac-ros-unet": {
+    ROS + "isaac-ros-unet": {
         "isaac_ros_triton": "needs Triton (ISSUES.md #21); one of two backends, TensorRT is the other",
     },
-    "ros-jazzy-isaac-ros-segformer": {
+    ROS + "isaac-ros-segformer": {
         "isaac_ros_triton": "needs Triton (ISSUES.md #21); one of two backends, TensorRT is the other",
     },
-    "ros-jazzy-isaac-ros-segment-anything": {
+    ROS + "isaac-ros-segment-anything": {
         "isaac_ros_triton": "needs Triton (ISSUES.md #21); one of two backends, TensorRT is the other",
     },
-    "ros-jazzy-isaac-ros-segment-anything2": {
+    ROS + "isaac-ros-segment-anything2": {
         "isaac_ros_triton": "needs Triton (ISSUES.md #21); one of two backends, TensorRT is the other",
     },
     # isaac_ros_deploy. Both declare Triton as <exec_depend>, so it never reaches
     # configure -- only `run`, where it would make the environment unsolvable.
-    "ros-jazzy-isaac-ros-deploy-converters": {
+    ROS + "isaac-ros-deploy-converters": {
         "isaac_ros_triton": "needs Triton (ISSUES.md #21); an inference node in the launch graph",
     },
-    "ros-jazzy-isaac-ros-deploy-bringup": {
+    ROS + "isaac-ros-deploy-bringup": {
         "isaac_ros_triton": "needs Triton (ISSUES.md #21); an inference node in the launch graph",
     },
     # Already <exec_depend> upstream, so these cost nothing at build time -- they only
     # have to stay out of `run`, where an unbuildable package makes the environment
     # unsolvable. isaac_ros_dnn_image_encoder is deliberately NOT dropped: it is built
     # here now, so the declared dependency can be honoured.
-    "ros-jazzy-isaac-ros-rtdetr": {
+    ROS + "isaac-ros-rtdetr": {
         "isaac_ros_tensor_rt": "needs TensorRT; the inference node in the launch graph",
     },
-    "ros-jazzy-isaac-ros-yolov8": {
+    ROS + "isaac-ros-yolov8": {
         "isaac_ros_tensor_rt": "needs TensorRT; the inference node in the launch graph",
     },
-    "ros-jazzy-isaac-ros-grounding-dino": {
+    ROS + "isaac-ros-grounding-dino": {
         "isaac_ros_tensor_rt": "needs TensorRT; the inference node in the launch graph",
     },
     # Optional segmentation launch backend. The package also ships a fully packaged
     # TensorRT path, and does not link or import this separate ROS node.
-    "ros-jazzy-nvblox-examples-bringup": {
+    ROS + "nvblox-examples-bringup": {
         "isaac_ros_triton": "needs Triton (ISSUES.md #21); optional launch backend",
     },
 }
@@ -807,13 +866,13 @@ def nitros_lfs(path: str, sha256: str) -> tuple[str, str, str]:
 EXTRA_SOURCES = {
     # GitHub archives contain pointers rather than Git LFS objects. Include only the
     # binaries selected by each vendor package for the two supported architectures.
-    "ros-jazzy-cuapriltags-vendor": [
+    ROS + "cuapriltags-vendor": [
         nitros_lfs("cuapriltags_vendor/lib_aarch64_jetpack61/libcuapriltags.a",
                    "e67298e8ee52d6253cd702f4c55b3727bea177f57236aa23797bde50d74dfc24"),
         nitros_lfs("cuapriltags_vendor/lib_x86_64_cuda_12_6/libcuapriltags.a",
                    "a7f32f58782de61dd23e507fe6ce5a907379498deec505669fe339ecd4facba7"),
     ],
-    "ros-jazzy-cumotion-vendor": [
+    ROS + "cumotion-vendor": [
         nitros_lfs("cumotion_vendor/aarch64_jetpack70/lib/libcumotion.so.1.1.0",
                    "6977efcb757839a3d992c368d8bb9ef12c4ee728469b567ae3baa26d89717c76"),
         nitros_lfs("cumotion_vendor/aarch64_jetpack70/python_wheels/cumotion-1.1.0-cp312-cp312-linux_aarch64.whl",
@@ -827,7 +886,7 @@ EXTRA_SOURCES = {
         nitros_lfs("cumotion_vendor/x86_64_cuda_13_0/python_wheels/cumotion_vis-1.1.0-py3-none-any.whl",
                    "ffebfff502ff599aa917503e2648255def6b815bf1092405bf732bb9bd056f3a"),
     ],
-    "ros-jazzy-cuvslam-vendor": [
+    ROS + "cuvslam-vendor": [
         nitros_lfs("cuvslam_vendor/lib_aarch64_jetpack70/cuvslam_api_launcher",
                    "c8b7bcb74c3da5adc69fdadf511b1096ccb1828e5fc5c78e308f977be837a630"),
         nitros_lfs("cuvslam_vendor/lib_aarch64_jetpack70/libcuvslam.so",
@@ -849,24 +908,24 @@ EXTRA_SOURCES = {
     # .gitmodules points at github.com/NVIDIA/IsaacTeleop, branch release/1.3.x -- and the
     # recorded commit resolves there, so this reproduces what a recursive clone would give.
     # Pinned by commit rather than by the branch, which moves.
-    "ros-jazzy-isaac-teleop-core": [(
+    ROS + "isaac-teleop-core": [(
         "https://github.com/NVIDIA/IsaacTeleop/archive/"
         "465ce637120ac35404f5f741a9f25f3f1a1a25ea.tar.gz",
         "730723484d920379ba095f3e3e3fe380669573723cb119cc1b28df4131702da6",
         "src/isaac_teleop_core/IsaacTeleop",
     )],
-    "ros-jazzy-unitree-g1-ros2-control": [(
+    ROS + "unitree-g1-ros2-control": [(
         "https://github.com/unitreerobotics/unitree_sdk2/archive/refs/tags/2.0.2.tar.gz",
         "8128514cccd840623fd47d655bdde29353ae5365d6940ec737f6fd61e8de366c",
         "src/unitree_g1/unitree_g1_ros2_control/unitree_sdk2",
     )],
-    "ros-jazzy-nvblox-ros": [(
+    ROS + "nvblox-ros": [(
         "https://github.com/nvidia-isaac/nvblox/archive/"
         "24eee4948768682fa1ffb969b881efee4fca29c2.tar.gz",
         "b5243e56760fe1aaa4d029d71ed8dde34ee9f4ac84aa7de1c4fafcb32d27fc30",
         "src/nvblox_ros/nvblox_core",
     )],
-    "ros-jazzy-nvblox-image-padding": [(
+    ROS + "nvblox-image-padding": [(
         "https://github.com/nvidia-isaac/nvblox/archive/"
         "24eee4948768682fa1ffb969b881efee4fca29c2.tar.gz",
         "b5243e56760fe1aaa4d029d71ed8dde34ee9f4ac84aa7de1c4fafcb32d27fc30",
@@ -910,7 +969,7 @@ _SQLITE = (
     "1d3049dd0f830a025a53105fc79fd2ab9431aea99e137809d064d8ee8356b032",
     "src/sqlite3",
 )
-_NVBLOX_CORE_USERS = ("ros-jazzy-nvblox-ros", "ros-jazzy-nvblox-image-padding")
+_NVBLOX_CORE_USERS = (ROS + "nvblox-ros", ROS + "nvblox-image-padding")
 for _p in _NVBLOX_CORE_USERS:
     EXTRA_SOURCES[_p].append(_STDGPU)
     EXTRA_SOURCES[_p].append(_SQLITE)
@@ -942,7 +1001,7 @@ EXTRA_PREP = {
 # Its version logic also mistakes the enclosing isaac-forge checkout for IsaacTeleop's
 # repository. Give the stripped archive a minimal nested checkout so versioning and the
 # source's later pinned Git fetches can both use Git.
-EXTRA_PREP["ros-jazzy-isaac-teleop-core"] = [
+EXTRA_PREP[ROS + "isaac-teleop-core"] = [
     "grep -q 'teleop_profiles.py' CMakeLists.txt",
     "sed -i 's|.*teleop_profiles.py.*|)|' CMakeLists.txt",
     "git -C IsaacTeleop init -q -b release/1.3.x",
@@ -951,7 +1010,7 @@ EXTRA_PREP["ros-jazzy-isaac-teleop-core"] = [
 ]
 # cuMotion's config incorrectly makes Eigen 3.3 a same-major requirement. Its API uses
 # ABI-compatible fixed-size Eigen types and all consumers compile successfully with Eigen 5.
-EXTRA_PREP["ros-jazzy-cumotion-vendor"] = [
+EXTRA_PREP[ROS + "cumotion-vendor"] = [
     "test \"$(grep -rl 'find_dependency(Eigen3 3.3)' -- */lib/cmake/cumotion/cumotionConfig.cmake | wc -l)\" -eq 2",
     "sed -i 's/find_dependency(Eigen3 3.3)/find_dependency(Eigen3)/' */lib/cmake/cumotion/cumotionConfig.cmake",
 ]
@@ -988,8 +1047,8 @@ EXTRA_CMAKE_ARGS = {
 # toolkit installs that config below targets/<arch> rather than the prefix searched by
 # default. Point CMake at the package explicitly for consumers that load cuMotion.
 for _p in [
-    "ros-jazzy-isaac-ros-cumotion-controllers",
-    "ros-jazzy-isaac-ros-ur5-cumotion-benchmark",
+    ROS + "isaac-ros-cumotion-controllers",
+    ROS + "isaac-ros-ur5-cumotion-benchmark",
 ]:
     EXTRA_CMAKE_ARGS[_p] = [
         '-DCMAKE_PREFIX_PATH="${PREFIX};${PREFIX}/targets/x86_64-linux"']
@@ -1016,28 +1075,28 @@ EXTRA_HOST = {
 # run dependencies intentionally provide only the runtime libraries, so the package's
 # declared cuda-toolkit build dependency needs a real toolkit in host, not merely the
 # cuda-version compatibility metapackage used for runtime pinning.
-EXTRA_HOST["ros-jazzy-isaac-deploy-core"] = [
+EXTRA_HOST[ROS + "isaac-deploy-core"] = [
     "cuda-toolkit", "triton-server ==2.60.0"]
-EXTRA_HOST["ros-jazzy-isaac-ros-triton"] = ["triton-server ==2.60.0"]
+EXTRA_HOST[ROS + "isaac-ros-triton"] = ["triton-server ==2.60.0"]
 # xorg-libx11 contains Xlib.h but X.h and the other protocol headers are separate.
-EXTRA_HOST["ros-jazzy-isaac-teleop-core"] = ["vulkan-headers", "xorg-xorgproto"]
+EXTRA_HOST[ROS + "isaac-teleop-core"] = ["vulkan-headers", "xorg-xorgproto"]
 # Unitree's CMakeLists invokes this generator but package.xml omits it.
-EXTRA_HOST["ros-jazzy-unitree-api"] = ["ros-jazzy-rosidl-generator-dds-idl"]
+EXTRA_HOST[ROS + "unitree-api"] = [ROS + "rosidl-generator-dds-idl"]
 
 # These packages do not compile CUDA themselves, but dependencies in their public CMake
 # closure load isaac_ros_common-extras.cmake, which requires CUDAToolkit. Without a complete
 # host toolkit, FindCUDAToolkit falls through to the machine's /usr/local/cuda and then fails
 # to find a prefix-provided cudart.
 for _p in [
-    "ros-jazzy-isaac-ros-cumotion-controllers",
-    "ros-jazzy-isaac-ros-ur5-cumotion-benchmark",
+    ROS + "isaac-ros-cumotion-controllers",
+    ROS + "isaac-ros-ur5-cumotion-benchmark",
 ]:
     EXTRA_HOST[_p] = ["cuda-toolkit"]
 
 # The manifest cannot name this non-ROS package, although the encoder links all six
 # multimedia libraries it provides.
-EXTRA_HOST["ros-jazzy-isaac-ros-h264-encoder"] = ["nvv4l2"]
-EXTRA_HOST["ros-jazzy-isaac-ros-h264-decoder"] = ["nvv4l2", "libv4l"]
+EXTRA_HOST[ROS + "isaac-ros-h264-encoder"] = ["nvv4l2"]
+EXTRA_HOST[ROS + "isaac-ros-h264-decoder"] = ["nvv4l2", "libv4l"]
 
 # Runtime requirements for dependencies hidden from package.xml (for example, a library
 # previously downloaded by CMake). Keep these separate from EXTRA_HOST: most entries in
@@ -1047,10 +1106,10 @@ EXTRA_RUN = {
     # CUDA-enabled Caffe2 config calls find_package(CUDAToolkit). Runtime CUDA libraries
     # are therefore insufficient for downstream CMake consumers: the exported package
     # requires the development toolkit as part of its public interface.
-    "ros-jazzy-isaac-deploy-core": ["cuda-toolkit", "triton-server ==2.60.0"],
-    "ros-jazzy-isaac-ros-triton": ["triton-server ==2.60.0"],
-    "ros-jazzy-isaac-ros-h264-encoder": ["nvv4l2"],
-    "ros-jazzy-isaac-ros-h264-decoder": ["nvv4l2", "libv4l"],
+    ROS + "isaac-deploy-core": ["cuda-toolkit", "triton-server ==2.60.0"],
+    ROS + "isaac-ros-triton": ["triton-server ==2.60.0"],
+    ROS + "isaac-ros-h264-encoder": ["nvv4l2"],
+    ROS + "isaac-ros-h264-decoder": ["nvv4l2", "libv4l"],
 }
 
 # Patches applied to a package's source, keyed by conda package name; paths are relative
@@ -1059,71 +1118,73 @@ EXTRA_RUN = {
 # fixing is under NVIDIA's proprietary header.
 PATCHES = {
     # v5.0-0 installs a VERSION file that is not present in the release archive.
-    "ros-jazzy-cuapriltags-vendor": ["patches/0001-do-not-install-missing-version-file.patch"],
-    "ros-jazzy-rosidl-buffer": ["patches/0001-use-cxx-20-directly.patch"],
-    "ros-jazzy-rosidl-buffer-backend-registry": [
+    ROS + "cuapriltags-vendor": ["patches/0001-do-not-install-missing-version-file.patch"],
+    ROS + "rosidl-buffer": ["patches/0001-use-cxx-20-directly.patch"],
+    ROS + "rosidl-buffer-backend-registry": [
         "patches/0001-use-cxx-20-directly.patch"],
     # Explicit specializations of a variable template are not implicitly inline, so
     # epsilon.hpp produces multiple definitions of MachineEpsilon<float|double> in any
     # target with two TUs including it. Breaks
     # isaac_ros_nitros_detection3_d_array_type at link time under GCC 15.
     # Apache-2.0, so ours to fix; see ISSUES.md and upstream/README.md.
-    "ros-jazzy-gxf-isaac-gems": ["patches/0001-epsilon-odr-inline.patch"],
+    ROS + "gxf-isaac-gems": ["patches/0001-epsilon-odr-inline.patch"],
     # Replace NVIDIA's private-artifactory FetchContent fallback with the packaged
     # Triton C API. This makes the dependency reproducible and visible to the solver.
-    "ros-jazzy-isaac-deploy-core": ["use-packaged-triton.patch"],
-    "ros-jazzy-isaac-ros-deploy-converters": [
+    ROS + "isaac-deploy-core": ["use-packaged-triton.patch"],
+    ROS + "isaac-ros-deploy-converters": [
         "patches/0001-support-vector-backed-tensor-messages.patch"],
-    "ros-jazzy-isaac-ros-deploy-ros2-control": [
-        "patches/0001-use-jazzy-urdf-header.patch"],
-    "ros-jazzy-isaac-ros-triton": ["patches/0001-use-packaged-triton-core.patch"],
-    "ros-jazzy-unitree-g1-bridge": ["patches/0001-match-package-version.patch"],
+    # Upstream includes urdf/model.hpp, which arrived in urdf 2.13 (Lyrical). Jazzy's
+    # urdf 2.10 only has the deprecated model.h.
+    ROS + "isaac-ros-deploy-ros2-control": [
+        OnlyOn("jazzy", "patches/0001-use-jazzy-urdf-header.patch")],
+    ROS + "isaac-ros-triton": ["patches/0001-use-packaged-triton-core.patch"],
+    ROS + "unitree-g1-bridge": ["patches/0001-match-package-version.patch"],
     # Isaac ROS targets CV-CUDA 0.14; adapt its changed C++ wrappers to conda-forge 0.16.
-    "ros-jazzy-isaac-ros-common": [
+    ROS + "isaac-ros-common": [
         "patches/0001-isaac_ros_common-use-FindCUDAToolkit-instead-of-the-.patch",
         "patches/0002-do-not-export-global-CCCL-target.patch"],
-    "ros-jazzy-isaac-ros-h264-decoder": [
+    ROS + "isaac-ros-h264-decoder": [
         "patches/0001-h264_decoder-link-the-nvbuf-libraries-by-name-so-DT_.patch"],
-    "ros-jazzy-isaac-ros-cumotion-robot-segmenter": [
+    ROS + "isaac-ros-cumotion-robot-segmenter": [
         "patches/0001-support-vector-backed-image-messages.patch"],
-    "ros-jazzy-isaac-ros-pointcloud-utils": [
+    ROS + "isaac-ros-pointcloud-utils": [
         "patches/0001-support-vector-backed-point-clouds.patch"],
-    "ros-jazzy-isaac-ros-teleop": [
+    ROS + "isaac-ros-teleop": [
         "patches/0001-use-conda-forge-msgpack-c-target.patch"],
     # The encoder hard-codes Ubuntu multiarch paths for nvv4l2 libraries even though
     # CMake can resolve the declared package from any installation prefix.
-    "ros-jazzy-isaac-ros-h264-encoder": [
+    ROS + "isaac-ros-h264-encoder": [
         "patches/0001-find-nvv4l2-libraries-in-prefix.patch"],
     # unitree_sdk2 ships only a static SDK archive, which find_library misses when the
     # distribution toolchain restricts its search suffixes to shared libraries.
-    "ros-jazzy-unitree-g1-ros2-control": [
+    ROS + "unitree-g1-ros2-control": [
         "patches/0001-use-vendored-static-sdk-library.patch"],
     # test_utils.py raises at module scope when ISAAC_ROS_WS is unset, and __init__.py
     # re-exports it, so importing the package fails in any environment that does not
     # export that variable -- which is every conda environment. Apache-2.0, ours to fix;
     # see ISSUES.md.
-    "ros-jazzy-isaac-ros-manipulation-ros-python-utils": [
+    ROS + "isaac-ros-manipulation-ros-python-utils": [
         "patches/0001-defer-isaac-ros-ws-check.patch"],
 }
 
 # Build-number bumps that must survive recipe regeneration.
 BUILD_NUMBERS = {
-    "ros-jazzy-isaac-ros-cvcuda-utils": 2,
-    "ros-jazzy-nvblox-ros": 1,
-    "ros-jazzy-isaac-ros-yolov8": 1,
+    ROS + "isaac-ros-cvcuda-utils": 2,
+    ROS + "nvblox-ros": 1,
+    ROS + "isaac-ros-yolov8": 1,
     # pip wheels install console scripts in bin/; build 1 also exposes them to ros2 run.
-    "ros-jazzy-isaac-ros-tensor-inspector": 1,
-    "ros-jazzy-isaac-ros-json-info-generator": 1,
-    "ros-jazzy-isaac-ros-mega-controller": 1,
-    "ros-jazzy-isaac-ros-mega-node-monitor": 1,
-    "ros-jazzy-isaac-ros-mqtt-bridge": 1,
-    "ros-jazzy-isaac-ros-scene-recorder": 1,
-    "ros-jazzy-isaac-ros-humanoid-task-server": 1,
+    ROS + "isaac-ros-tensor-inspector": 1,
+    ROS + "isaac-ros-json-info-generator": 1,
+    ROS + "isaac-ros-mega-controller": 1,
+    ROS + "isaac-ros-mega-node-monitor": 1,
+    ROS + "isaac-ros-mqtt-bridge": 1,
+    ROS + "isaac-ros-scene-recorder": 1,
+    ROS + "isaac-ros-humanoid-task-server": 1,
 }
 
 # Build-only libraries whose run exports must not leak into package metadata.
 IGNORE_RUN_EXPORTS = {
-    "ros-jazzy-nvblox-ros": ["gtest"],
+    ROS + "nvblox-ros": ["gtest"],
 }
 
 # Files a package must ship beyond share/<pkg>/package.xml, checked declaratively at the
@@ -1131,25 +1192,25 @@ IGNORE_RUN_EXPORTS = {
 # exists, or wherever a patch is what puts it there -- a passing build says the compiler
 # was happy, not that the payload arrived.
 EXTRA_TEST_FILES = {
-    "ros-jazzy-isaac-ros-triton": [
+    ROS + "isaac-ros-triton": [
         "lib/libtriton_node.so",
     ],
-    "ros-jazzy-unitree-api": [
+    ROS + "unitree-api": [
         "share/unitree_api/msg/Request.msg",
     ],
-    "ros-jazzy-unitree-g1-bridge": [
+    ROS + "unitree-g1-bridge": [
         "bin/unitree_bridge_node",
         "share/unitree_g1_bridge/launch/unitree_g1_bridge.launch.py",
     ],
-    "ros-jazzy-thor-devkit-realsense-rig-description": [
+    ROS + "thor-devkit-realsense-rig-description": [
         "share/thor_devkit_realsense_rig_description/urdf/thor_devkit_realsense_rig_d455.urdf.xacro",
         "share/thor_devkit_realsense_rig_description/meshes/thor_devkit_realsense_rig_frame.stl",
         "share/thor_devkit_realsense_rig_description/launch/thor_devkit_realsense_rig_description.launch.py",
     ],
-    "ros-jazzy-isaac-ros-manipulation-asset-bringup": [
+    ROS + "isaac-ros-manipulation-asset-bringup": [
         "lib/isaac_ros_manipulation_asset_bringup/setup_perception_models.py",
     ],
-    "ros-jazzy-isaac-ros-manipulation-bringup": [
+    ROS + "isaac-ros-manipulation-bringup": [
         "share/isaac_ros_manipulation_bringup/launch/workflows.launch.py",
     ],
 }
@@ -1376,14 +1437,40 @@ SYSTEM = {
 
 
 def ros_name(dep: str) -> str:
-    return "ros-jazzy-" + dep.replace("_", "-")
+    return ROS + dep.replace("_", "-")
+
+
+ROS_DISTRO_CONDITION = re.compile(r"\$ROS_DISTRO\s*(==|!=)\s*'?([a-z]+)'?")
+
+
+def distros_of(attrs: str) -> tuple[str, ...]:
+    """The distros a manifest dependency applies to.
+
+    REP 149 conditions on $ROS_DISTRO are evaluated per distro: isaac_deploy_core needs
+    tl_expected on Jazzy and rcpputils on Lyrical. Any other condition is about the
+    target platform ($ISAAC_ROS_PLATFORM), which this repo handles separately, so those
+    dependencies are dropped as before.
+    """
+    cond = re.search(r'condition="([^"]*)"', attrs)
+    if cond is None:
+        return DISTROS
+    if "$ROS_DISTRO" not in cond[1]:
+        return ()
+    m = ROS_DISTRO_CONDITION.fullmatch(cond[1].strip())
+    if m is None:
+        raise ValueError(f"unsupported ROS_DISTRO condition: {cond[1]!r}")
+    op, value = m.groups()
+    return tuple(d for d in DISTROS if (d == value) == (op == "=="))
 
 
 def deps_of(pkgxml: str, name: str, kinds: set[str] | None = None) -> list[str]:
     out: list[str] = []
     for kind, attrs, dep in DEP_TAG.findall(pkgxml):
         dep = dep.strip()
-        if kind == "test_depend" or dep in TEST_ONLY or "condition" in attrs:
+        if kind == "test_depend" or dep in TEST_ONLY:
+            continue
+        distros = distros_of(attrs)
+        if not distros:
             continue
         if kinds is not None and kind not in kinds:
             continue
@@ -1418,6 +1505,8 @@ def deps_of(pkgxml: str, name: str, kinds: set[str] | None = None) -> list[str]:
             mapped = ros_name(dep)
         if mapped == name or mapped in out:
             continue
+        if len(distros) == 1:
+            mapped = OnlyOn(distros[0], mapped.replace(ROS, f"ros-{distros[0]}-"))
         out.append(mapped)
     # Only on the unfiltered call, which is the one that feeds host and run. The
     # kinds-filtered calls exist to pick build tooling out of the manifest, and an
@@ -1461,7 +1550,7 @@ PY_IMPORTS = {
 # python module lives in tf2_ros_py; ros-jazzy-tf2-ros is the C++ package and installs
 # no python at all, so guessing from the module name gives an env that cannot import it.
 ROS_PY_IMPORTS = {
-    "tf2_ros": "ros-jazzy-tf2-ros-py",
+    "tf2_ros": ROS + "tf2-ros-py",
 }
 
 # Subdirectories of a module that ship with it but are never imported by it.
@@ -1543,7 +1632,7 @@ def emit_python(name: str, repo: str, path: str, base: str, pkgxml: str,
     under $PREFIX/lib/<pkg>/ too: `ros2 run` does not search PATH and only checks there.
     """
     deps = deps_of(pkgxml, name)
-    ros_dir = name.replace("ros-jazzy-", "").replace("-", "_")
+    ros_dir = name.replace(ROS, "").replace("-", "_")
     repo_info = REPOS[repo]
     has_module = os.path.isdir(os.path.join(base, ros_dir))
 
@@ -1557,7 +1646,7 @@ def emit_python(name: str, repo: str, path: str, base: str, pkgxml: str,
                  if os.path.isfile(setup_py) else "")
     if "ament_index_python" in setup_src:
         # pyyaml is for isaac_ros_version_embed.py, which the generator shells out to.
-        host += ["pyyaml", "ros-jazzy-ament-index-python"]
+        host += ["pyyaml", ROS + "ament-index-python"]
         for d in deps_of(pkgxml, name, kinds={"build_depend", "buildtool_depend"}):
             if d not in host:
                 host.append(d)
@@ -1581,9 +1670,6 @@ def emit_python(name: str, repo: str, path: str, base: str, pkgxml: str,
             if d not in run:
                 run.append(d)
 
-    def block(items, indent=4):
-        return "\n".join(f"{' ' * indent}- {i}" for i in items) or f"{' ' * indent}# none"
-
     # A pure-data package (urdf/srdf/config only) has no module to import.
     import_test = f"""
   - python:
@@ -1592,8 +1678,7 @@ def emit_python(name: str, repo: str, path: str, base: str, pkgxml: str,
       pip_check: false""" if has_module else ""
 
     pats = PATCHES.get(name, [])
-    patch_block = ("\n    patches:\n" + "\n".join(f"      - {x}" for x in pats)
-                   if pats else "")
+    patch_block = ("\n    patches:\n" + render_items(pats, indent=6) if pats else "")
 
     return f"""schema_version: 1
 
@@ -1616,7 +1701,7 @@ source:
     target_directory: src{patch_block}
 
 build:
-  number: {BUILD_NUMBERS.get(name, 0)}
+  number: {BUILD_NUMBERS.get(name, 0)}{skip_block(name)}
   script:
     - export AMENT_PREFIX_PATH="${{PREFIX}}${{AMENT_PREFIX_PATH:+:${{AMENT_PREFIX_PATH}}}}"
     - cd src/{path}
@@ -1624,10 +1709,10 @@ build:
 
 requirements:
   host:
-{block(host)}
+{render_items(host)}
   run:
     - python
-{block(run)}
+{render_items(run)}
 
 tests:
   - package_contents:
@@ -1699,29 +1784,25 @@ def emit(name: str, repo: str, path: str) -> str | None:
     # cuMotion needs (see TRAIT_DEPS) that made whole environments unsolvable --
     # isaac_ros_manipulation_gear_assembly wants cuMotion's object attachment *and*
     # ur_robot_driver, whose joint_trajectory_controller -> rsl chain requires eigen 5.
-    run = [d for d in deps if not d.startswith(("ros-jazzy-ament-cmake", "ament_cmake"))
-           and d not in ("ros-jazzy-rosidl-default-generators",)
+    run = [d for d in deps if not d.startswith((ROS + "ament-cmake", "ament_cmake"))
+           and d not in (ROS + "rosidl-default-generators",)
            and not d.startswith("eigen")]
-    if "rosidl" in traits and "ros-jazzy-rosidl-default-runtime" not in run:
-        run.append("ros-jazzy-rosidl-default-runtime")
+    if "rosidl" in traits and ROS + "rosidl-default-runtime" not in run:
+        run.append(ROS + "rosidl-default-runtime")
     if "vpi" in traits and "vpi" not in run:
         run.append("vpi")
     for extra in EXTRA_RUN.get(name, []):
         if extra not in run:
             run.append(extra)
 
-    ros_dir = name.replace("ros-jazzy-", "").replace("-", "_")
+    ros_dir = name.replace(ROS, "").replace("-", "_")
     repo_info = REPOS[repo]
-
-    def block(items, indent=4):
-        return "\n".join(f"{' ' * indent}- {i}" for i in items) or f"{' ' * indent}# none"
 
     trait_note = (f"\n# Detected build traits: {', '.join(sorted(traits))}."
                   if traits else "\n# No special build traits detected.")
 
     pats = PATCHES.get(name, [])
-    patch_block = ("    patches:\n" + "\n".join(f"      - {x}" for x in pats) + "\n"
-                   if pats else "")
+    patch_block = ("    patches:\n" + render_items(pats, indent=6) + "\n" if pats else "")
     ignored = IGNORE_RUN_EXPORTS.get(name, [])
     ignore_block = ("  ignore_run_exports:\n    by_name:\n" +
                     "\n".join(f"      - {x}" for x in ignored) + "\n"
@@ -1825,10 +1906,13 @@ source:
     target_directory: src
 {patch_block}{extra_sources}
 build:
-  number: {BUILD_NUMBERS.get(name, 0)}
+  number: {BUILD_NUMBERS.get(name, 0)}{skip_block(name)}
   script:
     - export AMENT_PREFIX_PATH="${{PREFIX}}${{AMENT_PREFIX_PATH:+:${{AMENT_PREFIX_PATH}}}}"
     - export CMAKE_PREFIX_PATH="${{PREFIX}}${{CMAKE_PREFIX_PATH:+:${{CMAKE_PREFIX_PATH}}}}"
+    # Some CMakeLists branch on it: isaac_deploy_core picks rcpputils over tl_expected
+    # on Lyrical. Set it from the variant rather than trusting env activation.
+    - export ROS_DISTRO="${{{{ ros_distro }}}}"
     - cd src/{path}{prep}
     # ${{CMAKE_ARGS}} carries the compiler activation's CMAKE_FIND_ROOT_PATH, which is
     # what points find_package(CUDAToolkit) at the prefix rather than /usr/local/cuda.
@@ -1881,12 +1965,12 @@ build:
 
 requirements:
   build:
-{block(build_tools)}
+{render_items(build_tools)}
   host:
-{block(host)}
+{render_items(host)}
   run:
     - __glibc >=2.38
-{block(run)}
+{render_items(run)}
 {ignore_block}
 tests:
   - package_contents:
@@ -1908,14 +1992,15 @@ def main() -> None:
     wanted = set(args.names) if args.names else None
     written = 0
     for name, repo, path in PACKAGES:
-        if wanted and name not in wanted:
+        recipe = recipe_dir(name)
+        if wanted and recipe not in wanted:
             continue
         if name in EXTERNAL:
             continue
         text = emit(name, repo, path)
         if text is None:
             continue
-        d = os.path.join(RECIPES, name)
+        d = os.path.join(RECIPES, recipe)
         os.makedirs(d, exist_ok=True)
         # Replace any repack recipe wholesale.
         for stale in ("build.sh", "relink.py"):
@@ -1924,7 +2009,7 @@ def main() -> None:
                 os.remove(p)
         with open(os.path.join(d, "recipe.yaml"), "w") as fh:
             fh.write(text)
-        print(f"  + recipes/{name}")
+        print(f"  + recipes/ros/{recipe}")
         written += 1
     print(f"\ngenerated {written} source recipes")
 

@@ -1,0 +1,13 @@
+# ROS 2 Lyrical, published to https://prefix.dev/isaac-forge/lyrical.
+#
+# Pass after variants.yaml for recipes/ros, with robostack-lyrical as the ROS channel:
+#   -m variants.yaml -m variants-lyrical.yaml
+#
+#   ros_distro   See variants-jazzy.yaml.
+#
+#   python       robostack-lyrical's ROS packages, including rclcpp's ABI closure, are
+#                built for CPython 3.14 (python_abi 3.14.* *_cp314).
+ros_distro:
+  - lyrical
+python:
+  - "3.14.*"

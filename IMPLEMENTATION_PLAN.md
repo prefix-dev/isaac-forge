@@ -39,7 +39,7 @@ Dependencies that differ per distro must come out of the generator, not be patch
 - Generator unit test on a sample `package.xml`: `$ROS_DISTRO` conditions become selectors, and `$ISAAC_ROS_PLATFORM` conditions are dropped.
 - A Lyrical build environment has `ROS_DISTRO=lyrical` (check in one recipe's build script or test).
 - The Jazzy dependency snapshot matches the old recipes (taken once, before the move).
-**Status**: Not Started
+**Status**: Complete
 
 ## Stage 2: Local tooling
 **Goal**: `scripts/build_all.sh` and `scripts/test_all.sh` take `--distro jazzy|lyrical` (default jazzy). They pick the matching variant file and channels, and build `recipes/foundation` before `recipes/ros`. Update the pixi tasks and README build docs.
