@@ -997,9 +997,24 @@ EXTRA_PREP = {
 # Its version logic also mistakes the enclosing isaac-forge checkout for IsaacTeleop's
 # repository. Give the stripped archive a minimal nested checkout so versioning and the
 # source's later pinned Git fetches can both use Git.
+#
+# IsaacTeleop refuses Python 3.14 (MAX_EXCLUSIVE "3.14", also on main; NVIDIA/IsaacTeleop
+# #626 gives no reason), and robostack-lyrical is 3.14. NVIDIA's Lyrical debs build on
+# Ubuntu 24.04's 3.12 and never meet it. Raise it to 3.15 -- tested on 3.14 -- here and
+# in the stub generator's project, which carries the same cap.
 EXTRA_PREP[ROS + "isaac-teleop-core"] = [
     "grep -q 'teleop_profiles.py' CMakeLists.txt",
     "sed -i 's|.*teleop_profiles.py.*|)|' CMakeLists.txt",
+    "grep -q 'set(ISAAC_TELEOP_PYTHON_VERSION_MAX_EXCLUSIVE \"3.14\")' IsaacTeleop/CMakeLists.txt",
+    "sed -i 's|ISAAC_TELEOP_PYTHON_VERSION_MAX_EXCLUSIVE \"3.14\"|ISAAC_TELEOP_PYTHON_VERSION_MAX_EXCLUSIVE \"3.15\"|' IsaacTeleop/CMakeLists.txt",
+    # The .pyi stub generator runs under its own uv project with the same cap.
+    "grep -q 'requires-python = \">=3.10,<3.14\"' IsaacTeleop/src/core/python/stubgen_pyproject.toml",
+    "sed -i 's|requires-python = \">=3.10,<3.14\"|requires-python = \">=3.10,<3.15\"|' IsaacTeleop/src/core/python/stubgen_pyproject.toml",
+    # pybind11-stubgen 3.0 (2026-09-25) renamed run(module_name=) to run(module_names=);
+    # generate_stubs.py uses the 2.x call, and the stubgen project does not pin it. Not
+    # Python-specific: every fresh IsaacTeleop build picks up 3.0.
+    "grep -q '\"pybind11-stubgen\",' IsaacTeleop/src/core/python/stubgen_pyproject.toml",
+    "sed -i 's|\"pybind11-stubgen\",|\"pybind11-stubgen<3\",|' IsaacTeleop/src/core/python/stubgen_pyproject.toml",
     "git -C IsaacTeleop init -q -b release/1.3.x",
     "git -C IsaacTeleop add VERSION",
     "git -C IsaacTeleop -c user.name=builder -c user.email=builder@localhost commit -qm source",
