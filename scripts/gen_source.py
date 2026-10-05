@@ -904,7 +904,10 @@ EXTRA_SOURCES = {
     ROS + "isaac-teleop-core": [(
         "https://github.com/NVIDIA/IsaacTeleop/archive/"
         "465ce637120ac35404f5f741a9f25f3f1a1a25ea.tar.gz",
-        "730723484d920379ba095f3e3e3fe380669573723cb119cc1b28df4131702da6",
+        # GitHub now serves this archive with Git LFS pointers for the 15 docs images
+        # instead of the images, which changed the hash. Every other file is unchanged,
+        # and the build reads none of the LFS files.
+        "657692663609abc1867554717a885661b6f61d0208951e2594c16ded2ca546de",
         "src/isaac_teleop_core/IsaacTeleop",
     )],
     ROS + "unitree-g1-ros2-control": [(

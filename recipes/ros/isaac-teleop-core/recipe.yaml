@@ -18,7 +18,7 @@ source:
     sha256: 78a4eb21e9e554455294bcdb2ee2de00e624ea9412d892be125ccc1b3506a863
     target_directory: src
   - url: https://github.com/NVIDIA/IsaacTeleop/archive/465ce637120ac35404f5f741a9f25f3f1a1a25ea.tar.gz
-    sha256: 730723484d920379ba095f3e3e3fe380669573723cb119cc1b28df4131702da6
+    sha256: 657692663609abc1867554717a885661b6f61d0208951e2594c16ded2ca546de
     target_directory: src/isaac_teleop_core/IsaacTeleop
 
 build:
