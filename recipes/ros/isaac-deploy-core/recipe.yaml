@@ -91,10 +91,7 @@ requirements:
     - pytorch-gpu ==2.13.0 cuda130_generic_*_202
     - ros-${{ ros_distro }}-ament-cmake
     - ros-${{ ros_distro }}-rclcpp
-    - if: ros_distro == "jazzy"
-      then: ros-jazzy-tl-expected
-    - if: ros_distro == "lyrical"
-      then: ros-lyrical-rcpputils
+    - ros-${{ ros_distro }}-rcpputils
     - yaml-cpp
     - cuda-toolkit
     - triton-server ==2.60.0
@@ -106,10 +103,7 @@ requirements:
     - nlohmann_json
     - pytorch-gpu ==2.13.0 cuda130_generic_*_202
     - ros-${{ ros_distro }}-rclcpp
-    - if: ros_distro == "jazzy"
-      then: ros-jazzy-tl-expected
-    - if: ros_distro == "lyrical"
-      then: ros-lyrical-rcpputils
+    - ros-${{ ros_distro }}-rcpputils
     - yaml-cpp
     - cuda-toolkit
     - triton-server ==2.60.0

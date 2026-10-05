@@ -10,11 +10,11 @@
 # not exist in output/ yet. Testing inline therefore fails for reasons that have nothing to
 # do with the package under test. By the time this runs, the whole set is present.
 #
-#     ./scripts/test_all.sh                    # every Jazzy package in output/
-#     ./scripts/test_all.sh --distro lyrical   # every Lyrical package in output/
+#     ./scripts/test_all.sh                    # every Lyrical package in output/
+#     ./scripts/test_all.sh --distro <distro>  # another variants-<distro>.yaml
 #     ./scripts/test_all.sh nvblox visual      # only packages whose filename matches a pattern
 #
-# output/ can hold both distros. ROS packages of the other distro are left out, since they
+# output/ can hold several distros. ROS packages of the other distro are left out, since they
 # resolve against a different RoboStack; foundation packages are tested with either.
 #
 # Every package is tested before anything is reported, so one broken package shows up as one
@@ -30,9 +30,9 @@ case "$(uname -m)" in
   *) echo "unsupported test architecture: $(uname -m)" >&2; exit 2 ;;
 esac
 TARGET_PLATFORM="${ISAAC_FORGE_TARGET_PLATFORM:-${NATIVE_PLATFORM}}"
-DISTRO="${ISAAC_FORGE_DISTRO:-jazzy}"
+DISTRO="${ISAAC_FORGE_DISTRO:-lyrical}"
 if [ "${1:-}" = --distro ]; then
-  [ "$#" -ge 2 ] || { echo "--distro requires jazzy or lyrical" >&2; exit 2; }
+  [ "$#" -ge 2 ] || { echo "--distro requires a name with a variants-<distro>.yaml" >&2; exit 2; }
   DISTRO="$2"; shift 2
 fi
 [ -f "variants-${DISTRO}.yaml" ] || { echo "unknown distro: ${DISTRO}" >&2; exit 2; }

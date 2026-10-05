@@ -7,15 +7,12 @@
 #
 # Environment:
 #   PLATFORM  linux-64 or linux-aarch64
-#   DISTRO    jazzy or lyrical. For foundations this only picks the reference channel:
-#             they are published to every distro channel, Lyrical first, so a package in
-#             isaac-forge/jazzy is in isaac-forge/lyrical too.
+#   DISTRO    a ROS distro with a variants-<distro>.yaml; selects isaac-forge/<distro> and
+#             robostack-<distro>
 #   STRICT    true: failures fail the job (after publishing what passed). false: they are
 #             reported as warnings, for a distro or platform that is still being brought up.
 #
-# Packages that failed their tests are moved to failed-packages/, never published. Files
-# listed in output/.inputs came from an earlier job and are neither tested nor published
-# again here.
+# Packages that failed their tests are moved to failed-packages/, never published.
 set -euo pipefail
 
 : "${PLATFORM:?}" "${DISTRO:?}" "${STRICT:?}"
@@ -67,10 +64,7 @@ build() {
 # isaac_ros_manipulation_orchestration, for one, needs isaac_ros_test only at test time.
 test_all() {
   shopt -s nullglob
-  local pkgs=() p
-  for p in output/*/*.conda; do
-    grep -qxF "$(basename "${p}")" output/.inputs 2>/dev/null || pkgs+=("${p}")
-  done
+  local pkgs=(output/*/*.conda) p
   echo "testing ${#pkgs[@]} package(s)"
   local failed=() passed attempt
   for p in "${pkgs[@]}"; do

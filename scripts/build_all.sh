@@ -6,16 +6,15 @@
 # `layer0` pixi task -- the obvious candidate -- passes no channels, so it cannot resolve
 # ros-jazzy-isaac-ros-common and fails on the second recipe it reaches.
 #
-#     ./scripts/build_all.sh                         # Jazzy, native platform, resumable
-#     ./scripts/build_all.sh --distro lyrical        # ROS 2 Lyrical instead
+#     ./scripts/build_all.sh                         # Lyrical, native platform, resumable
+#     ./scripts/build_all.sh --distro <distro>       # another variants-<distro>.yaml
 #     ./scripts/build_all.sh --target linux-aarch64  # explicit ARM64 target
 #     ./scripts/build_all.sh --recipe vpi             # build one recipe
 #     ./scripts/build_all.sh --fresh                   # discard output first
 #
 # recipes/foundation is built first, with variants.yaml alone: those packages do not depend
-# on the ROS distro, so one build serves both. recipes/ros follows with
-# variants-<distro>.yaml on top. Both distros can share output/: every ROS package name
-# carries its distro.
+# on the ROS distro. recipes/ros follows with variants-<distro>.yaml on top. Several
+# distros can share output/: every ROS package name carries its distro.
 #
 # Three flags carry the design, and each was learned the hard way:
 #
@@ -46,7 +45,7 @@ case "$(uname -m)" in
 esac
 
 TARGET_PLATFORM="${ISAAC_FORGE_TARGET_PLATFORM:-${NATIVE_PLATFORM}}"
-DISTRO="${ISAAC_FORGE_DISTRO:-jazzy}"
+DISTRO="${ISAAC_FORGE_DISTRO:-lyrical}"
 FRESH=false
 STAGES=(foundation ros)
 RECIPE=""
@@ -57,7 +56,7 @@ while [ "$#" -gt 0 ]; do
       [ "$#" -ge 2 ] || { echo "--target requires linux-64 or linux-aarch64" >&2; exit 2; }
       TARGET_PLATFORM="$2"; shift 2 ;;
     --distro)
-      [ "$#" -ge 2 ] || { echo "--distro requires jazzy or lyrical" >&2; exit 2; }
+      [ "$#" -ge 2 ] || { echo "--distro requires a name with a variants-<distro>.yaml" >&2; exit 2; }
       DISTRO="$2"; shift 2 ;;
     --recipe)
       [ "$#" -ge 2 ] || { echo "--recipe requires a recipe directory name" >&2; exit 2; }
@@ -68,7 +67,7 @@ while [ "$#" -gt 0 ]; do
       fi
       RECIPE="$2"; shift 2 ;;
     -h|--help)
-      echo "usage: $0 [--fresh] [--distro jazzy|lyrical] [--target linux-64|linux-aarch64] [--recipe NAME]"
+      echo "usage: $0 [--fresh] [--distro lyrical] [--target linux-64|linux-aarch64] [--recipe NAME]"
       exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac

@@ -4,10 +4,9 @@
 # Pass it with `-m variants.yaml`; the pixi tasks already do. rattler-build only
 # auto-discovers a `variants.yaml` sitting *next to* a recipe, not a shared one.
 #
-# Nothing here may differ between ROS distros: recipes/foundation is built with this
-# file alone and the same package is published to every distro channel. Distro pins
-# (ros_distro, python) live in variants-<distro>.yaml, passed after this file for
-# recipes/ros.
+# Nothing here is specific to a ROS distro: recipes/foundation is built with this file
+# alone. Distro pins (ros_distro, python) live in variants-<distro>.yaml, passed after
+# this file for recipes/ros.
 #
 # Both keys are load-bearing:
 #
@@ -46,7 +45,7 @@
 #
 #                          NOTE: this is in the build string, so packages built before it
 #                          carry a different hash than a fresh build produces -- same
-#                          situation as the python pin in variants-jazzy.yaml, and the same fix (one
+#                          situation as the python pin in variants-lyrical.yaml, and the same fix (one
 #                          rebuild). Nothing in output/ is wrong, only differently named.
 cuda_compiler:
   - cuda-nvcc

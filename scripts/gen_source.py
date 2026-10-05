@@ -30,8 +30,12 @@ RECIPES = os.path.join(ROOT, "recipes", "ros")
 CACHE = os.path.join(ROOT, ".srccache")
 
 # Every recipe is built once per ROS distro. rattler-build fills in ros_distro from
-# variants-<distro>.yaml, so one recipe yields ros-jazzy-* and ros-lyrical-* packages.
-DISTROS = ("jazzy", "lyrical")
+# variants-<distro>.yaml, so one recipe yields a ros-<distro>-* package for each.
+#
+# Only Lyrical: Isaac ROS 5.0 needs the ROS 2 buffer API (rosidl::Buffer for uint8[]),
+# which Jazzy's messages lack. Jazzy is published as a frozen copy of the Isaac ROS 4.6
+# builds instead; see scripts/snapshot_jazzy.py.
+DISTROS = ("lyrical",)
 ROS = "ros-${{ ros_distro }}-"
 
 
@@ -118,10 +122,6 @@ REPOS = {
     "isaac_ros_mapping_and_localization": dict(
         url="https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_mapping_and_localization/archive/refs/tags/v5.0-0.tar.gz",
         sha256="b4be0a658aa6a5cd02ef3bdfc0d600c2f0dccb8ed46844a08d61b9f8888752b0"),
-    "rosidl": dict(
-        url="https://github.com/ros2/rosidl/archive/00d13c5139b5eb2000b5b190a558cac5eb9e8bf2.tar.gz",
-        sha256="c4d7f8ce216277561d393751bc3f77ef2e5384f5bc4b679b40da9f057331e89f",
-        homepage="https://github.com/ros2/rosidl"),
     "rosidl_buffer_backends": dict(
         url="https://github.com/ros2/rosidl_buffer_backends/archive/7e723061d03b347bedea69009b003f33e9b53314.tar.gz",
         sha256="2b065cdc5387290a3514987a3673a61665e99afc25c09c0bc4b3a46057b9fa71",
@@ -210,10 +210,7 @@ PACKAGES = [
     (ROS + "ros2-benchmark-interfaces", "ros2_benchmark", "ros2_benchmark_interfaces"),
     (ROS + "negotiated-interfaces", "negotiated", "negotiated_interfaces"),
     (ROS + "negotiated", "negotiated", "negotiated"),
-    # Buffer backends introduced by ROS 2 Rolling and used by Isaac ROS 5.0.
-    (ROS + "rosidl-buffer", "rosidl", "rosidl_buffer"),
-    (ROS + "rosidl-buffer-backend", "rosidl", "rosidl_buffer_backend"),
-    (ROS + "rosidl-buffer-backend-registry", "rosidl", "rosidl_buffer_backend_registry"),
+    # Buffer backends used by Isaac ROS 5.0. rosidl_buffer itself comes from RoboStack.
     (ROS + "cuda-buffer-backend-msgs", "rosidl_buffer_backends",
      "cuda_buffer_backend/cuda_buffer_backend_msgs"),
     (ROS + "tensor-msgs", "rosidl_buffer_backends", "tensor_msgs"),
@@ -702,8 +699,6 @@ TRAIT_DEPS = {
 # the CMakeLists by pattern -- they come from ament_target_dependencies() naming a
 # package that ament_auto_find_build_dependencies() was never told to find.
 EXTRA_DEPS = {
-    # Upstream's manifest omits rosidl_buffer although CMake requires it directly.
-    ROS + "rosidl-buffer-backend-registry": [ROS + "rosidl-buffer"],
     # reshape_node calls
     #   ament_target_dependencies(reshape_node rclcpp rclcpp_components isaac_ros_cvcuda_utils)
     # and package.xml never mentions isaac_ros_cvcuda_utils. ament_target_dependencies
@@ -715,10 +710,6 @@ EXTRA_DEPS = {
 # Packages not built for a distro, with the reason. Keyed by conda package name ->
 # {distro: why}. Emitted as `skip:` so the recipe still renders for that distro.
 SKIP = {
-    # RoboStack builds these from the Lyrical rosdistro release; ours would shadow them.
-    ROS + "rosidl-buffer": {"lyrical": "in robostack-lyrical"},
-    ROS + "rosidl-buffer-backend": {"lyrical": "in robostack-lyrical"},
-    ROS + "rosidl-buffer-backend-registry": {"lyrical": "in robostack-lyrical"},
     # Dependencies robostack-lyrical does not ship yet. Drop these once it does.
     ROS + "multi-realsense-emitter-synchronizer": {
         "lyrical": "needs realsense2_camera_msgs, not in robostack-lyrical yet"},
@@ -737,14 +728,6 @@ SKIP = {
 # itself for no gain -- and everything dropped here is reachable by installing it
 # alongside once it exists.
 DROP_DEPS = {
-    # ament_cmake_ros_core is newer than Jazzy; these targets only use it to select C++20,
-    # which the accompanying patches request directly from CMake.
-    ROS + "rosidl-buffer": {
-        "ament_cmake_ros_core": "replaced by target_compile_features(cxx_std_20)",
-    },
-    ROS + "rosidl-buffer-backend-registry": {
-        "ament_cmake_ros_core": "replaced by target_compile_features(cxx_std_20)",
-    },
     # A Python bridge generates no interfaces. Upstream carries this as build metadata,
     # but keeping it would unnecessarily install a code generator at runtime.
     ROS + "unitree-g1-bridge": {
@@ -1119,9 +1102,6 @@ EXTRA_RUN = {
 PATCHES = {
     # v5.0-0 installs a VERSION file that is not present in the release archive.
     ROS + "cuapriltags-vendor": ["patches/0001-do-not-install-missing-version-file.patch"],
-    ROS + "rosidl-buffer": ["patches/0001-use-cxx-20-directly.patch"],
-    ROS + "rosidl-buffer-backend-registry": [
-        "patches/0001-use-cxx-20-directly.patch"],
     # Explicit specializations of a variable template are not implicitly inline, so
     # epsilon.hpp produces multiple definitions of MachineEpsilon<float|double> in any
     # target with two TUs including it. Breaks
@@ -1133,10 +1113,6 @@ PATCHES = {
     ROS + "isaac-deploy-core": ["use-packaged-triton.patch"],
     ROS + "isaac-ros-deploy-converters": [
         "patches/0001-support-vector-backed-tensor-messages.patch"],
-    # Upstream includes urdf/model.hpp, which arrived in urdf 2.13 (Lyrical). Jazzy's
-    # urdf 2.10 only has the deprecated model.h.
-    ROS + "isaac-ros-deploy-ros2-control": [
-        OnlyOn("jazzy", "patches/0001-use-jazzy-urdf-header.patch")],
     ROS + "isaac-ros-triton": ["patches/0001-use-packaged-triton-core.patch"],
     ROS + "unitree-g1-bridge": ["patches/0001-match-package-version.patch"],
     # Isaac ROS targets CV-CUDA 0.14; adapt its changed C++ wrappers to conda-forge 0.16.
@@ -1505,7 +1481,10 @@ def deps_of(pkgxml: str, name: str, kinds: set[str] | None = None) -> list[str]:
             mapped = ros_name(dep)
         if mapped == name or mapped in out:
             continue
-        if len(distros) == 1:
+        if distros != DISTROS:
+            if len(distros) != 1:
+                raise ValueError(f"{name}: '{dep}' applies to {distros}; only one-distro "
+                                 "selectors are supported")
             mapped = OnlyOn(distros[0], mapped.replace(ROS, f"ros-{distros[0]}-"))
         out.append(mapped)
     # Only on the unfiltered call, which is the one that feeds host and run. The

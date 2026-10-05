@@ -3,10 +3,15 @@
 # Pass after variants.yaml for recipes/ros, with robostack-lyrical as the ROS channel:
 #   -m variants.yaml -m variants-lyrical.yaml
 #
-#   ros_distro   See variants-jazzy.yaml.
+#   ros_distro   Fills in ros-${{ ros_distro }}-* in every recipes/ros package name and
+#                dependency, and selects distro-specific dependencies.
 #
-#   python       robostack-lyrical's ROS packages, including rclcpp's ABI closure, are
-#                built for CPython 3.14 (python_abi 3.14.* *_cp314).
+#   python       robostack-lyrical's ROS packages, including rclcpp's ABI closure, are built
+#                for CPython 3.14 (python_abi 3.14.* *_cp314). The C++ recipes get that
+#                through rclpy and the rosidl python generators; the ament_python recipes,
+#                whose host env is only python + pip + setuptools, would float to whatever
+#                conda-forge ships and stop being installable next to ROS. Pin it here
+#                rather than in each recipe.
 ros_distro:
   - lyrical
 python:

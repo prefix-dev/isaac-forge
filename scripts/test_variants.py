@@ -14,7 +14,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from gen_source import DISTROS, SKIP, distros_of, deps_of, recipe_dir  # noqa: E402
+from gen_source import DISTROS, SKIP, deps_of, distros_of, recipe_dir  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -35,8 +35,8 @@ def by_name(outputs: list[dict]) -> dict[str, dict]:
 def test_conditions() -> None:
     assert distros_of("") == DISTROS
     assert distros_of(' condition="$ROS_DISTRO == \'lyrical\'"') == ("lyrical",)
-    assert distros_of(' condition="$ROS_DISTRO != \'lyrical\'"') == ("jazzy",)
-    assert distros_of(' condition="$ROS_DISTRO == jazzy"') == ("jazzy",)
+    assert distros_of(' condition="$ROS_DISTRO != \'lyrical\'"') == ()
+    assert distros_of(' condition="$ROS_DISTRO == jazzy"') == ()
     # Platform conditions are handled elsewhere and stay dropped.
     assert distros_of(' condition="$ISAAC_ROS_PLATFORM == amd64"') == ()
 
@@ -47,14 +47,12 @@ def test_conditions() -> None:
       <build_depend condition="$ISAAC_ROS_PLATFORM == arm64-fastos">cuda-toolkit-13-0</build_depend>
     """
     deps = deps_of(pkgxml, "ros-${{ ros_distro }}-probe")
-    assert deps == ["ros-${{ ros_distro }}-rclcpp", "ros-jazzy-tl-expected",
-                    "ros-lyrical-rcpputils"], deps
-    assert [getattr(d, "distro", None) for d in deps] == [None, "jazzy", "lyrical"], deps
+    assert deps == ["ros-${{ ros_distro }}-rclcpp", "ros-${{ ros_distro }}-rcpputils"], deps
 
 
 def test_foundation() -> None:
-    # Built once with variants.yaml alone and published to every distro channel, so a
-    # foundation recipe must not depend on anything a distro file sets.
+    # Built with variants.yaml alone, so a foundation recipe must not depend on anything
+    # a distro file sets.
     for platform in ("linux-64", "linux-aarch64"):
         for o in render("recipes/foundation", platform):
             name = o["recipe"]["package"]["name"]
@@ -65,33 +63,21 @@ def test_foundation() -> None:
 
 def test_ros(platform: str) -> None:
     for distro in DISTROS:
-        other = next(d for d in DISTROS if d != distro)
         recipes = by_name(render("recipes/ros", platform, f"variants-{distro}.yaml"))
         for name, recipe in recipes.items():
-            assert name.startswith(f"ros-{distro}-") or name == "tensorrt-python", name
+            assert name.startswith(f"ros-{distro}-"), name
             reqs = json.dumps(recipe["requirements"])
-            assert f"ros-{other}-" not in reqs, (distro, name)
+            assert "ros-${{" not in reqs and "ros-jazzy-" not in reqs, (distro, name)
 
         # Skipped recipes are absent from the render.
         for name, reasons in SKIP.items():
             rendered = f"ros-{distro}-{recipe_dir(name)}"
             assert (rendered in recipes) == (distro not in reasons), (distro, rendered)
 
-        core = recipes[f"ros-{distro}-isaac-deploy-core"]["requirements"]["host"]
-        want, unwanted = ((f"ros-{distro}-tl-expected", f"ros-{distro}-rcpputils")
-                          if distro == "jazzy" else
-                          (f"ros-{distro}-rcpputils", f"ros-{distro}-tl-expected"))
-        assert want in core and unwanted not in core, (distro, core)
-
-        patches = [p for s in recipes[f"ros-{distro}-isaac-ros-deploy-ros2-control"]["source"]
-                   for p in s.get("patches") or []]
-        assert (patches == ["patches/0001-use-jazzy-urdf-header.patch"]) == (distro == "jazzy")
-
-        script = recipes[f"ros-{distro}-isaac-deploy-core"]["build"]["script"]
-        assert 'export ROS_DISTRO="${{ ros_distro }}"' in script, script
-
-        trt = "tensorrt-python" in recipes
-        assert trt == (distro == "jazzy" and platform == "linux-aarch64"), (distro, platform)
+        # From isaac_deploy_core's package.xml conditions, not a hand-written entry.
+        core = recipes[f"ros-{distro}-isaac-deploy-core"]
+        assert f"ros-{distro}-rcpputils" in core["requirements"]["host"], core["requirements"]
+        assert 'export ROS_DISTRO="${{ ros_distro }}"' in core["build"]["script"]
 
 
 def main() -> None:

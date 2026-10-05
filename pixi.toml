@@ -34,9 +34,9 @@ libarchive = "*"   # bsdtar, reads .deb directly
 # ros-jazzy-isaac-ros-common -- it worked only back when recipes/ held nothing but vendored
 # binaries. Losing output/ once with no working rebuild command in the repo was enough.
 #
-# Both default to ROS 2 Jazzy; pass `--distro lyrical` for Lyrical.
+# Both build ROS 2 Lyrical; Jazzy is a frozen Isaac ROS 4.6 snapshot (see README).
 [tasks.build]
-description = "Build every recipe into ./output (resumable; --fresh to start over, --distro lyrical)"
+description = "Build every recipe into ./output (resumable; add --fresh to start over)"
 cmd = "./scripts/build_all.sh"
 
 [tasks.test]
@@ -52,7 +52,7 @@ description = "Build just the VPI package"
 cmd = "./scripts/build_all.sh --recipe vpi"
 
 [tasks.render]
-description = "Render every recipe for both distros and platforms and check the result (no build)"
+description = "Render every recipe for every distro and platform and check the result (no build)"
 cmd = "python scripts/test_variants.py"
 
 [tasks.inventory]
