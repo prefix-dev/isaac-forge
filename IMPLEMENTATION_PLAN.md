@@ -36,7 +36,7 @@ tested builds in the old `isaac-forge` channel, and **main builds Lyrical 5.0**.
 ## Stage 2: Local tooling
 **Goal**: `scripts/build_all.sh` / `scripts/test_all.sh` take `--distro` and build `recipes/foundation` before `recipes/ros`; `pixi run render` runs the render test.
 **Success Criteria**: a full Lyrical build on linux-64 (Brev `isaac-ros-builder`).
-**Status**: In Progress (full Lyrical build running on the builder)
+**Status**: Complete (full Lyrical linux-64 build on Brev `isaac-ros-builder`: 140 of 154 recipes build, 140 of 141 packages pass their tests; failures listed under follow-ups)
 
 ## Stage 3: release.yml
 **Goal**: The CI layout above.
@@ -50,7 +50,7 @@ tested builds in the old `isaac-forge` channel, and **main builds Lyrical 5.0**.
 - `pixi run render` passes for Lyrical on both platforms; `grep -rn jazzy recipes/` finds nothing.
 - The snapshot script, run locally in dry-run mode, selects an installable 4.6 set for linux-64 and linux-aarch64 (both TensorRT flavors) and lists anything it had to leave out.
 **Tests**: `scripts/test_variants.py`; `scripts/snapshot_jazzy.py --dry-run`.
-**Status**: In Progress
+**Status**: Complete
 
 ## Stage 4: Upstream and rollout
 **Goal**: Publish both channels for real.
@@ -64,6 +64,15 @@ tested builds in the old `isaac-forge` channel, and **main builds Lyrical 5.0**.
 Before landing: invoke the `adversarial-review` skill and follow it.
 
 ## Follow-ups (outside this plan)
+- Lyrical parity. NVIDIA ships Lyrical debs for every one of these, so each is fixable:
+  - `ament_target_dependencies()` was removed from Lyrical's ament_cmake (ament/ament_cmake#614): isaac-ros-vda5050-client, isaac-ros-cumotion, isaac-ros-foundationpose, nvblox-image-padding, nvblox-nav2, nvblox-message-adapters, unitree-hg-ros2-control, topic-based-ros2-control.
+  - isaac-ros-cuvslam: release tarball lacks the cuvslam submodule.
+  - isaac-ros-dope: `isaac_ros_common/cuda_stream.hpp` not found.
+  - isaac-ros-deploy-converters: build failure after the TorchConfig kineto warning (needs a closer look).
+  - isaac-ros-cumotion-controllers: Lyrical's realtime_tools deprecates `realtime_buffer.hpp` with a `#warning`, fatal here.
+  - nvblox-ros: "CUDA compiler and CUDA toolkit headers are incompatible" (nvcc vs CCCL headers in the solve).
+  - isaac-teleop-core: IsaacTeleop tarball sha256 drift (also on Jazzy).
+  - isaac-ros-scene-recorder: test environment does not solve.
 - Jazzy 5.0 failures found on the way, relevant only if Jazzy ever moves past 4.6: `message_filters::Subscriber` API break (topic-tools, realsense-splitter, multi-realsense-emitter-synchronizer), IsaacTeleop tarball sha256 drift (isaac-teleop-core).
 - TensorRT Python bindings for Lyrical (CPython 3.14). conda-forge's tensorrt-feedstock ships only the C++ libraries; PyPI has cp314 `tensorrt-cu13-bindings` from 11.1.0.106 onward, matching x86's conda-forge TRT. Propose bindings upstream in conda-forge/tensorrt-feedstock, plus a Jetson source build.
 - Remove the Lyrical skips once RoboStack ships the missing packages; turn on `strict` for Lyrical at parity.
