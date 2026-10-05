@@ -33,8 +33,7 @@ CACHE = os.path.join(ROOT, ".srccache")
 # variants-<distro>.yaml, so one recipe yields a ros-<distro>-* package for each.
 #
 # Only Lyrical: Isaac ROS 5.0 needs the ROS 2 buffer API (rosidl::Buffer for uint8[]),
-# which Jazzy's messages lack. Jazzy is published as a frozen copy of the Isaac ROS 4.6
-# builds instead; see scripts/snapshot_jazzy.py.
+# which Jazzy's messages lack. Jazzy stays on the Isaac ROS 4.6 builds; see README.md.
 DISTROS = ("lyrical",)
 ROS = "ros-${{ ros_distro }}-"
 

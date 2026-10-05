@@ -34,7 +34,7 @@ libarchive = "*"   # bsdtar, reads .deb directly
 # ros-jazzy-isaac-ros-common -- it worked only back when recipes/ held nothing but vendored
 # binaries. Losing output/ once with no working rebuild command in the repo was enough.
 #
-# Both build ROS 2 Lyrical; Jazzy is a frozen Isaac ROS 4.6 snapshot (see README).
+# Both build ROS 2 Lyrical; Jazzy stays on the Isaac ROS 4.6 builds (see README).
 [tasks.build]
 description = "Build every recipe into ./output (resumable; add --fresh to start over)"
 cmd = "./scripts/build_all.sh"
