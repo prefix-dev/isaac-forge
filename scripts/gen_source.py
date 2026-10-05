@@ -1126,7 +1126,8 @@ PATCHES = {
         "patches/0001-replace-removed-ament_target_dependencies.patch"],
     ROS + "isaac-ros-dope": ["patches/0002-declare-isaac-ros-common-dependency.patch"],
     # Uses neither ament_cmake_auto nor a dependency without targets, so it links each
-    # dependency's ${<pkg>_TARGETS} directly.
+    # dependency's ${<pkg>_TARGETS} directly. isaac_ros_deploy_converters does the same
+    # in its 0002 patch, next to its other patch below.
     ROS + "unitree-hg-ros2-control": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
     # v5.0-0 installs a VERSION file that is not present in the release archive.
     ROS + "cuapriltags-vendor": ["patches/0001-do-not-install-missing-version-file.patch"],
@@ -1141,7 +1142,7 @@ PATCHES = {
     ROS + "isaac-deploy-core": ["use-packaged-triton.patch"],
     ROS + "isaac-ros-deploy-converters": [
         "patches/0001-support-vector-backed-tensor-messages.patch",
-        "patches/0002-replace-removed-ament_target_dependencies.patch"],
+        "patches/0002-link-targets-instead-of-ament_target_dependencies.patch"],
     ROS + "isaac-ros-triton": ["patches/0001-use-packaged-triton-core.patch"],
     ROS + "unitree-g1-bridge": ["patches/0001-match-package-version.patch"],
     # Isaac ROS targets CV-CUDA 0.14; adapt its changed C++ wrappers to conda-forge 0.16.
