@@ -1129,6 +1129,8 @@ PATCHES = {
     # dependency's ${<pkg>_TARGETS} directly. isaac_ros_deploy_converters does the same
     # in its 0002 patch, next to its other patch below.
     ROS + "unitree-hg-ros2-control": ["patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
+    ROS + "isaac-ros-deploy-ros2-control": [
+        "patches/0001-link-targets-instead-of-ament_target_dependencies.patch"],
     # v5.0-0 installs a VERSION file that is not present in the release archive.
     ROS + "cuapriltags-vendor": ["patches/0001-do-not-install-missing-version-file.patch"],
     # Explicit specializations of a variable template are not implicitly inline, so
