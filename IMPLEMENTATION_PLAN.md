@@ -21,23 +21,17 @@ environment) and should also work on Jazzy (Isaac ROS 4.6, the flat `isaac-forge
 **Goal**: Move `yolo/` to `examples/yolov8/` with `lyrical` (default) and `jazzy` environments.
 **Success Criteria**: `pixi lock` solves both environments on linux-64 and linux-aarch64; `pixi run check` and `pixi run demo` detect objects in `bus.jpg` on a GPU machine for both environments.
 **Tests**: `check` + `demo --no-viewer` on Brev `isaac-ros-builder` (L40S).
-**Status**: In Progress (Jazzy demo passes on Brev; Lyrical demo passes on Brev with packages rebuilt from prefix-dev/isaac-forge#7, and needs that PR released before the lock can be refreshed)
+**Status**: Complete (both environments pass on Brev against the published channels)
 
 ## Stage 1b: find-anything
 **Goal**: `examples/find-anything/`: open-vocabulary detection with Grounding DINO on a sample photo or a live stream, with prompts typed while it runs.
 **Success Criteria**: finds the cats, remote controls and couch in the COCO sample on both environments from a cold start (engine build included); a typed prompt change takes effect on a stream.
 **Tests**: on Brev: Lyrical (with packages from prefix-dev/isaac-forge#9) and Jazzy photo demos from a cold start; Lyrical traffic video switching from "person" to "bicycle, car".
-**Status**: In Progress (all tests pass on Brev; the Lyrical lock waits for #9 to be released)
-
-## Stage 2: apriltag
-**Goal**: `examples/apriltag/`: a sample image or webcam through cuAprilTags, tag poses in Rerun. No model download.
-**Success Criteria**: the demo prints the poses of the tags in the sample image on both environments.
-**Tests**: as Stage 1.
-**Status**: Not Started
+**Status**: Complete (both environments pass on Brev against the published channels)
 
 ## Stage 3: benchmark
 **Goal**: `examples/benchmark/`: `pixi run benchmark` runs ros2_benchmark on an r2b sample rosbag and prints throughput and latency, for comparing x86 and Jetson.
-**Success Criteria**: a results table for at least the image-proc and apriltag graphs.
+**Success Criteria**: a results table for at least the image-proc and YOLOv8 graphs.
 **Tests**: as Stage 1.
 **Status**: Not Started
 
