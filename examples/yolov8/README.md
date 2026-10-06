@@ -16,11 +16,11 @@ the first time.
 
 ```bash
 cd examples/yolov8
-pixi run check
-pixi run demo
+pixi run -e lyrical check
+pixi run -e lyrical demo
 ```
 
-The default environment is ROS 2 Lyrical with Isaac ROS 5.0. The `jazzy` environment runs
+The `lyrical` environment is ROS 2 Lyrical with Isaac ROS 5.0. The `jazzy` environment runs
 the same demo on ROS 2 Jazzy with Isaac ROS 4.6:
 
 ```bash
@@ -36,9 +36,9 @@ writes an annotated image to `.cache/yolov8_result.png`.
 For a machine without a desktop session, record the visualization instead:
 
 ```bash
-pixi run demo --no-viewer
+pixi run -e lyrical demo --no-viewer
 # Later, on a desktop:
-pixi run rerun .cache/yolov8_result.rrd
+pixi run -e lyrical rerun .cache/yolov8_result.rrd
 ```
 
 ## Video and webcam streaming
@@ -46,17 +46,17 @@ pixi run rerun .cache/yolov8_result.rrd
 Run the bundled-on-demand sample traffic video until it ends:
 
 ```bash
-pixi run video
+pixi run -e lyrical video
 ```
 
 A webcam, video file, RTSP stream, or other OpenCV-compatible URL can be used as
 the source. The Rerun timeline updates with every inference result:
 
 ```bash
-pixi run video --source 0                    # default webcam
-pixi run video --source /path/to/video.mp4
-pixi run video --source /path/to/video.mp4 --loop
-pixi run video --source rtsp://camera.example/stream
+pixi run -e lyrical video --source 0                    # default webcam
+pixi run -e lyrical video --source /path/to/video.mp4
+pixi run -e lyrical video --source /path/to/video.mp4 --loop
+pixi run -e lyrical video --source rtsp://camera.example/stream
 ```
 
 For headless processing, add `--no-viewer`; this writes

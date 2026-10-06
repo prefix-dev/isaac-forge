@@ -44,13 +44,6 @@ ros-jazzy-isaac-ros-image-proc = "4.6.*"
 ros-jazzy-isaac-ros-dnn-image-encoder = "4.6.*"
 ros-jazzy-isaac-ros-tensor-rt = "4.6.*"
 ros-jazzy-isaac-ros-yolov8 = "4.6.*"
-# isaac-forge/jazzy also holds 5.0 builds of some Jazzy packages, and the 4.6 packages
-# depend on these without a version. The 5.0 cvcuda_utils lacks a symbol isaac_ros_tensor_proc
-# 4.6 needs, so keep the whole closure on 4.6.
-ros-jazzy-isaac-ros-common = "4.6.*"
-ros-jazzy-isaac-ros-cvcuda-utils = "4.6.*"
-ros-jazzy-isaac-ros-tensor-list-interfaces = "4.6.*"
-ros-jazzy-isaac-ros-vpi-utils = "4.6.*"
 
 [tasks.check]
 description = "Show that Pixi resolved the Isaac ROS packages from isaac-forge"

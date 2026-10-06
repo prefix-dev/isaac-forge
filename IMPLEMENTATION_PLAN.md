@@ -10,7 +10,7 @@ environment) and should also work on Jazzy (Isaac ROS 4.6, the flat `isaac-forge
 | Topic | Decision |
 |---|---|
 | Layout | `examples/<name>/` with its own `pixi.toml`, `pixi.lock`, README and scripts, so one can be copied out on its own. |
-| Distros | Features `lyrical` and `jazzy` carry the channels, Python and `ros-<distro>-*` deps; `default = ["lyrical"]`, `jazzy = ["jazzy"]`. Shared Python deps sit in `[dependencies]`. |
+| Distros | Inline environments `[environments.lyrical]` and `[environments.jazzy]` carry the channel (`isaac-forge/<distro>`, which also serves its RoboStack), Python and `ros-<distro>-*` deps. Shared Python deps sit in `[dependencies]`. |
 | Hardware | An NVIDIA GPU only. Inputs are sample images, sample rosbags, or an optional webcam; no RealSense, ZED or robot. |
 | Data | Downloaded on first use into `.cache/`, pinned by URL and SHA-256. |
 | Visualization | Rerun, with `--no-viewer` writing a `.rrd` for headless machines. |
@@ -21,7 +21,7 @@ environment) and should also work on Jazzy (Isaac ROS 4.6, the flat `isaac-forge
 **Goal**: Move `yolo/` to `examples/yolov8/` with `lyrical` (default) and `jazzy` environments.
 **Success Criteria**: `pixi lock` solves both environments on linux-64 and linux-aarch64; `pixi run check` and `pixi run demo` detect objects in `bus.jpg` on a GPU machine for both environments.
 **Tests**: `check` + `demo --no-viewer` on Brev `isaac-ros-builder` (L40S).
-**Status**: In Progress (Jazzy solves on both platforms; Lyrical waits for the first release to fill `isaac-forge/lyrical`)
+**Status**: In Progress (Jazzy demo passes on Brev; Lyrical demo passes on Brev with packages rebuilt from prefix-dev/isaac-forge#7, and needs that PR released before the lock can be refreshed)
 
 ## Stage 2: apriltag
 **Goal**: `examples/apriltag/`: a sample image or webcam through cuAprilTags, tag poses in Rerun. No model download.
