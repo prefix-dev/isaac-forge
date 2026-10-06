@@ -7,8 +7,8 @@
 #
 # Environment:
 #   PLATFORM  linux-64 or linux-aarch64
-#   DISTRO    a ROS distro with a variants-<distro>.yaml; selects isaac-forge/<distro> and
-#             robostack-<distro>
+#   DISTRO    a ROS distro with a variants-<distro>.yaml; selects isaac-forge/<distro>, which
+#             brings in robostack-<distro> and conda-forge
 #   STRICT    true: failures fail the job (after publishing what passed). false: they are
 #             only reported as warnings.
 #
@@ -16,8 +16,10 @@
 set -euo pipefail
 
 : "${PLATFORM:?}" "${DISTRO:?}" "${STRICT:?}"
-CHANNELS=(-c ./output -c "https://prefix.dev/isaac-forge/${DISTRO}"
-          -c "https://prefix.dev/robostack-${DISTRO}" -c conda-forge)
+# isaac-forge/<distro> declares robostack-<distro> as its CEP-42 base channel, and RoboStack
+# declares conda-forge as its own, so the solver loads both from this one channel. Listing
+# them here as well would override those relations with a contradicting order.
+CHANNELS=(-c ./output -c "https://prefix.dev/isaac-forge/${DISTRO}")
 mkdir -p output failed-packages
 
 fail() {  # kind message
