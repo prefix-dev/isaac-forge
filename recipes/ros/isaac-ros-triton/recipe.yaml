@@ -98,8 +98,8 @@ requirements:
     - ros-${{ ros_distro }}-rclcpp-components
     - ros-${{ ros_distro }}-tensor-msgs
     - ros-${{ ros_distro }}-triton-conversions
-    - ros2-distro-mutex
     - triton-server ==2.60.0
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

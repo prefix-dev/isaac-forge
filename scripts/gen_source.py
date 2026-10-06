@@ -1491,6 +1491,21 @@ SYSTEM = {
     "libbsd0": None,
     # python3-isaacteleop-pip-shim is deliberately not mapped: this recipe builds that
     # NVIDIA wheel itself from the pinned IsaacTeleop source.
+    # Python dependencies NVIDIA installs with pip. Unmapped, they were skipped as unknown
+    # system keys, and the packages failed at runtime: isaac_ros_grounding_dino's text
+    # tokenizer node imports transformers, segment_anything(2), dope, isaac_ros_test and
+    # deploy_converters export models to ONNX.
+    "python3-transformers-pip-shim": "transformers",
+    "python3-onnx-pip-shim": "onnx",
+    "python3-onnxscript-pip-shim": "onnxscript",
+    "python3-onnxconverter-common-pip-shim": "onnxconverter-common",
+    "python3-torchvision-pip-shim": "torchvision",
+    "python3-sam2-pip-shim": "sam2",
+    # triton_conversions' public header includes <triton/core/tritonserver.h>. Same pin as
+    # EXTRA_HOST/EXTRA_RUN for isaac_ros_triton and isaac_deploy_core.
+    "triton-server": "triton-server ==2.60.0",
+    # NVIDIA's apt-only developer CLI; nothing in the package needs it at build or run time.
+    "isaac-ros-cli": None,
     "python3-msgpack": "msgpack-python",
     "python3-msgpack-numpy": "msgpack-numpy",
     "msgpack": "msgpack-c",

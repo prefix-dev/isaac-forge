@@ -92,10 +92,10 @@ requirements:
     - ros-${{ ros_distro }}-ament-cmake
     - ros-${{ ros_distro }}-rclcpp
     - ros-${{ ros_distro }}-rcpputils
+    - triton-server ==2.60.0
     - yaml-cpp
     - ros2-distro-mutex
     - cuda-toolkit
-    - triton-server ==2.60.0
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev
@@ -105,9 +105,9 @@ requirements:
     - pytorch-gpu ==2.13.0 cuda130_generic_*_202
     - ros-${{ ros_distro }}-rclcpp
     - ros-${{ ros_distro }}-rcpputils
+    - triton-server ==2.60.0
     - yaml-cpp
     - cuda-toolkit
-    - triton-server ==2.60.0
 
 tests:
   - package_contents:

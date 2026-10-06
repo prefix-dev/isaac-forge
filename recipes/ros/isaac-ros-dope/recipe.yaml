@@ -89,6 +89,8 @@ requirements:
   host:
     - eigen
     - libopencv
+    - onnx
+    - onnxscript
     - pytorch-gpu ==2.13.0 cuda130_generic_*_202
     - ros-${{ ros_distro }}-ament-cmake
     - ros-${{ ros_distro }}-ament-index-cpp
@@ -103,6 +105,7 @@ requirements:
     - ros-${{ ros_distro }}-tensor-msgs
     - ros-${{ ros_distro }}-tf2-eigen
     - ros-${{ ros_distro }}-vision-msgs
+    - torchvision
     - ros2-distro-mutex
     - ros-${{ ros_distro }}-ament-cmake-auto
     - cuda-version 13.*
@@ -113,6 +116,8 @@ requirements:
   run:
     - __glibc >=2.38
     - libopencv
+    - onnx
+    - onnxscript
     - pytorch-gpu ==2.13.0 cuda130_generic_*_202
     - ros-${{ ros_distro }}-ament-index-cpp
     - ros-${{ ros_distro }}-cuda-buffer
@@ -126,6 +131,7 @@ requirements:
     - ros-${{ ros_distro }}-tensor-msgs
     - ros-${{ ros_distro }}-tf2-eigen
     - ros-${{ ros_distro }}-vision-msgs
+    - torchvision
 
 tests:
   - package_contents:
