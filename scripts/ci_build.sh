@@ -11,6 +11,9 @@
 #             brings in robostack-<distro> and conda-forge
 #   STRICT    true: failures fail the job (after publishing what passed). false: they are
 #             only reported as warnings.
+#   REQUIRE_NEW_BUILDS
+#             true (pull requests): fail before building when a selected recipe would
+#             produce a file the channel already has; see scripts/check_new_builds.py.
 #
 # Packages that failed their tests are moved to failed-packages/, never published.
 set -euo pipefail
@@ -61,6 +64,12 @@ build() {
     fi
     recipes+=(--recipe "recipes/${stage}/${name}/recipe.yaml")
   done
+  if [ "${REQUIRE_NEW_BUILDS:-false}" = true ]; then
+    local paths=()
+    for name in "$@"; do paths+=("recipes/${stage}/${name}/recipe.yaml"); done
+    pixi run python scripts/check_new_builds.py --platform "${PLATFORM}" --distro "${DISTRO}" \
+      --stage "${stage}" "${paths[@]}"
+  fi
   pixi run rattler-build build "${recipes[@]}" --continue-on-failure "${args[@]}" ||
     fail build "Some of the selected recipes in recipes/${stage} failed to build."
 }

@@ -1241,6 +1241,16 @@ BUILD_NUMBERS = {
     ROS + "isaac-ros-mqtt-bridge": 1,
     ROS + "isaac-ros-scene-recorder": 1,
     ROS + "isaac-ros-humanoid-task-server": 1,
+    # Build 1 adds the Python and Triton run dependencies the generator used to skip as
+    # unmapped rosdep keys. The build hash covers only variant keys, so without a new build
+    # number the release saw the old filename in the channel and skipped them.
+    ROS + "isaac-ros-grounding-dino": 1,
+    ROS + "isaac-ros-segment-anything": 1,
+    ROS + "isaac-ros-segment-anything2": 1,
+    ROS + "isaac-ros-dope": 1,
+    ROS + "isaac-ros-test": 1,
+    ROS + "isaac-ros-deploy-converters": 1,
+    ROS + "triton-conversions": 1,
 }
 
 # Build-only libraries whose run exports must not leak into package metadata.

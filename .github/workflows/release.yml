@@ -133,6 +133,9 @@ jobs:
       PLATFORM: ${{ matrix.platform }}
       DISTRO: ${{ matrix.distro }}
       STRICT: ${{ matrix.strict }}
+      # A pull request's recipe change must produce new file names, or the release after
+      # merging skips it.
+      REQUIRE_NEW_BUILDS: ${{ github.event_name == 'pull_request' }}
     steps:
       - uses: actions/checkout@v7
 
