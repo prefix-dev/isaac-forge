@@ -76,8 +76,10 @@ Package names follow the usual RoboStack convention: the ROS package
 channel pages. Pixi resolves the package's NITROS,
 ROS, CUDA, and other library dependencies automatically.
 
-For a complete working project, see [`yolo/`](yolo/README.md). Its `pixi.toml` consumes the
-public channel and runs YOLOv8 TensorRT inference on an image, video, webcam, or RTSP stream.
+For complete working projects, see [`examples/`](examples/). Each one is a Pixi workspace
+that runs on Lyrical by default and on Jazzy with `-e jazzy`;
+[`examples/yolov8`](examples/yolov8/README.md) runs YOLOv8 TensorRT inference on an image,
+video, webcam, or RTSP stream.
 
 https://github.com/user-attachments/assets/3fdf53d4-5ca1-434b-a05b-74456d565907
 
@@ -193,7 +195,7 @@ scripts/gen_repack.py    vendor-package recipe generator
 packages.json            generated Isaac ROS package inventory
 variants.yaml            shared CUDA and compiler pins
 variants-<distro>.yaml   ros_distro and Python per ROS distro
-yolo/                    YOLOv8 inference example for x86_64 and Jetson/ARM64
+examples/                runnable Pixi workspaces for x86_64 and Jetson/ARM64
 output/                  local package channel (gitignored)
 ```
 
