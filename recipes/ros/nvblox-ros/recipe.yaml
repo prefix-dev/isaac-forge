@@ -136,6 +136,7 @@ requirements:
     - ros-${{ ros_distro }}-tf2-eigen
     - ros-${{ ros_distro }}-tf2-ros
     - ros-${{ ros_distro }}-visualization-msgs
+    - ros2-distro-mutex
     - libnpp-dev
     - libcurand-dev
     - gtest

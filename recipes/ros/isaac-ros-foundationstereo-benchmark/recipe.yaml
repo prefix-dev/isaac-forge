@@ -94,6 +94,7 @@ requirements:
     - ros-${{ ros_distro }}-isaac-ros-tensor-proc
     - ros-${{ ros_distro }}-isaac-ros-tensor-rt
     - ros-${{ ros_distro }}-rclpy
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

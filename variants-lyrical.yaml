@@ -12,7 +12,17 @@
 #                whose host env is only python + pip + setuptools, would float to whatever
 #                conda-forge ships and stop being installable next to ROS. Pin it here
 #                rather than in each recipe.
+#
+#   ros2_distro_mutex, libopencv
+#                The RoboStack generation the packages are built against. Every ROS recipe
+#                has ros2-distro-mutex in host, so its run export keeps a package from
+#                being installed next to another generation's ABI. Keep both in step with
+#                robostack-lyrical's conda_build_config.yaml when it moves.
 ros_distro:
   - lyrical
 python:
   - "3.14.*"
+ros2_distro_mutex:
+  - "0.21"
+libopencv:
+  - "5.0"

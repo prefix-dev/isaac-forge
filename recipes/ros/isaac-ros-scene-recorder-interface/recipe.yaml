@@ -90,6 +90,7 @@ requirements:
     - ros-${{ ros_distro }}-rclpy
     - ros-${{ ros_distro }}-rosidl-default-generators
     - ros-${{ ros_distro }}-rosidl-default-runtime
+    - ros2-distro-mutex
     - ros-${{ ros_distro }}-ament-cmake-auto
     - cuda-version 13.*
     - cuda-cudart-dev

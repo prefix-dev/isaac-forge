@@ -130,6 +130,7 @@ requirements:
     - websockets
     - xorg-libx11
     - xorg-libxext
+    - ros2-distro-mutex
     - vulkan-headers
     - xorg-xorgproto
     - cuda-version 13.*

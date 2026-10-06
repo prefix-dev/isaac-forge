@@ -89,6 +89,7 @@ requirements:
     - ros-${{ ros_distro }}-isaac-ros-common
     - ros-${{ ros_distro }}-nvblox-msgs
     - ros-${{ ros_distro }}-ros2launch
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

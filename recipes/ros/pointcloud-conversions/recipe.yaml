@@ -88,6 +88,7 @@ requirements:
     - ros-${{ ros_distro }}-ament-cmake-auto
     - ros-${{ ros_distro }}-cuda-buffer
     - ros-${{ ros_distro }}-sensor-msgs
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

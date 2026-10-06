@@ -89,6 +89,7 @@ requirements:
     - ros-${{ ros_distro }}-rosidl-default-generators
     - ros-${{ ros_distro }}-rosidl-default-runtime
     - ros-${{ ros_distro }}-std-msgs
+    - ros2-distro-mutex
   run:
     - __glibc >=2.38
     - ros-${{ ros_distro }}-builtin-interfaces

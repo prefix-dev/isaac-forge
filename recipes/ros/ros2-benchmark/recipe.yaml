@@ -100,6 +100,7 @@ requirements:
     - ros-${{ ros_distro }}-rosbag2-py
     - ros-${{ ros_distro }}-rosbag2-storage
     - ros-${{ ros_distro }}-std-msgs
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

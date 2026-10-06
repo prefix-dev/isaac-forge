@@ -90,6 +90,7 @@ requirements:
     - ros-${{ ros_distro }}-isaac-ros-common
     - ros-${{ ros_distro }}-isaac-ros-dnn-image-encoder
     - ros-${{ ros_distro }}-rclpy
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

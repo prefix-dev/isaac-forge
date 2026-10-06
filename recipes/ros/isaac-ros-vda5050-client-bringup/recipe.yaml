@@ -107,6 +107,7 @@ requirements:
     - ros-${{ ros_distro }}-nav2-waypoint-follower
     - ros-${{ ros_distro }}-rclcpp-components
     - ros-${{ ros_distro }}-vda5050-action-handler-plugins
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

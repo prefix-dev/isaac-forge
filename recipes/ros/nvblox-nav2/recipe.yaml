@@ -99,6 +99,7 @@ requirements:
     - ros-${{ ros_distro }}-std-srvs
     - ros-${{ ros_distro }}-tf2-eigen
     - ros-${{ ros_distro }}-tf2-ros
+    - ros2-distro-mutex
     - ros-${{ ros_distro }}-ament-cmake-auto
     - cuda-version 13.*
     - cuda-cudart-dev

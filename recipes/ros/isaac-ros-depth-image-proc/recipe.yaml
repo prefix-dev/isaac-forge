@@ -103,11 +103,12 @@ requirements:
     - ros-${{ ros_distro }}-sensor-msgs
     - ros-${{ ros_distro }}-tf2-eigen
     - ros-${{ ros_distro }}-tf2-ros
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev
     - libcvcuda >=0.16,<0.17
-    - libopencv 4.13.*
+    - libopencv
     - python
     - pyyaml
   run:

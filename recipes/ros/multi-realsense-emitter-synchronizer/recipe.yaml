@@ -95,6 +95,7 @@ requirements:
     - ros-${{ ros_distro }}-rclcpp
     - ros-${{ ros_distro }}-rclcpp-components
     - ros-${{ ros_distro }}-realsense2-camera-msgs
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

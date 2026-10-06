@@ -94,6 +94,7 @@ requirements:
     - ros-${{ ros_distro }}-rosidl-buffer-backend-registry
     - ros-${{ ros_distro }}-rosidl-runtime-cpp
     - ros-${{ ros_distro }}-rosidl-typesupport-cpp
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

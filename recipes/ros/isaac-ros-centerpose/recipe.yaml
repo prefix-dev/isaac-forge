@@ -86,7 +86,7 @@ requirements:
     - pkg-config
   host:
     - eigen
-    - libopencv 4.13.*
+    - libopencv
     - ros-${{ ros_distro }}-ament-cmake
     - ros-${{ ros_distro }}-cuda-buffer
     - ros-${{ ros_distro }}-cv-bridge
@@ -99,6 +99,7 @@ requirements:
     - ros-${{ ros_distro }}-tensor-msgs
     - ros-${{ ros_distro }}-tf2-eigen
     - ros-${{ ros_distro }}-vision-msgs
+    - ros2-distro-mutex
     - ros-${{ ros_distro }}-ament-cmake-auto
     - cuda-version 13.*
     - cuda-cudart-dev
@@ -107,7 +108,7 @@ requirements:
     - pyyaml
   run:
     - __glibc >=2.38
-    - libopencv 4.13.*
+    - libopencv
     - ros-${{ ros_distro }}-cuda-buffer
     - ros-${{ ros_distro }}-cv-bridge
     - ros-${{ ros_distro }}-isaac-ros-common

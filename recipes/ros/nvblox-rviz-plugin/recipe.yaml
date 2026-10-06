@@ -93,6 +93,7 @@ requirements:
     - ros-${{ ros_distro }}-rviz-default-plugins
     - ros-${{ ros_distro }}-rviz-ogre-vendor
     - ros-${{ ros_distro }}-rviz-rendering
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

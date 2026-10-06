@@ -87,6 +87,7 @@ requirements:
     - ros-${{ ros_distro }}-ament-cmake-auto
     - ros-${{ ros_distro }}-isaac-ros-moveit-benchmark
     - ros-${{ ros_distro }}-rclpy
+    - ros2-distro-mutex
   run:
     - __glibc >=2.38
     - ros-${{ ros_distro }}-isaac-ros-moveit-benchmark

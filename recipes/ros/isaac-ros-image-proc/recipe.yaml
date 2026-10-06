@@ -86,7 +86,7 @@ requirements:
     - pkg-config
   host:
     - libcvcuda-dev >=0.16,<0.17
-    - libopencv 4.13.*
+    - libopencv
     - ros-${{ ros_distro }}-ament-cmake-auto
     - ros-${{ ros_distro }}-ament-index-cpp
     - ros-${{ ros_distro }}-cuda-buffer
@@ -97,6 +97,7 @@ requirements:
     - ros-${{ ros_distro }}-rclcpp
     - ros-${{ ros_distro }}-rclcpp-components
     - ros-${{ ros_distro }}-sensor-msgs
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev
@@ -107,7 +108,7 @@ requirements:
   run:
     - __glibc >=2.38
     - libcvcuda-dev >=0.16,<0.17
-    - libopencv 4.13.*
+    - libopencv
     - ros-${{ ros_distro }}-ament-index-cpp
     - ros-${{ ros_distro }}-cuda-buffer
     - ros-${{ ros_distro }}-cvcuda-conversions

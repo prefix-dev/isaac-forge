@@ -92,6 +92,7 @@ requirements:
     - ros-${{ ros_distro }}-isaac-ros-scene-recorder
     - ros-${{ ros_distro }}-isaac-ros-vda5050-client
     - ros-${{ ros_distro }}-isaac-ros-vda5050-client-bringup
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev
