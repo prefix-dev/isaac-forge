@@ -70,9 +70,12 @@ channel pages. Pixi resolves the package's NITROS,
 ROS, CUDA, and other library dependencies automatically.
 
 For complete working projects, see [`examples/`](examples/). Each one is a Pixi workspace
-with a `lyrical` and a `jazzy` environment (`pixi run -e lyrical ...`);
-[`examples/yolov8`](examples/yolov8/README.md) runs YOLOv8 TensorRT inference on an image,
-video, webcam, or RTSP stream.
+with a `lyrical` and a `jazzy` environment (`pixi run -e lyrical ...`):
+
+- [`examples/yolov8`](examples/yolov8/README.md) runs YOLOv8 TensorRT inference on an image,
+  video, webcam, or RTSP stream.
+- [`examples/find-anything`](examples/find-anything/README.md) finds whatever you type in a
+  photo or your webcam feed, with NVIDIA's open-vocabulary Grounding DINO.
 
 https://github.com/user-attachments/assets/3fdf53d4-5ca1-434b-a05b-74456d565907
 
