@@ -47,6 +47,16 @@ SAMPLE_URL = "http://images.cocodataset.org/val2017/000000039769.jpg"
 SAMPLE_SHA256 = "dea9e7ef97386345f7cff32f9055da4982da5471c48d575146c796ab4563b04e"
 SAMPLE_PROMPT = "cat, remote control, couch"
 
+# NVIDIA's text tokenizer node loads `bert-base-uncased` from the Hugging Face cache and
+# otherwise downloads whatever `main` is today. Pin it: fetch these files at this commit
+# into the workspace, and run the graph with that cache and the hub offline.
+TOKENIZER_REPO = "bert-base-uncased"
+TOKENIZER_REVISION = "86b5e0934494bd15c9632b12f734a8a67f723594"
+TOKENIZER_FILES = ("config.json", "tokenizer.json", "tokenizer_config.json", "vocab.txt")
+HF_HOME = CACHE / "huggingface"
+# HF_HUB_CACHE too: a user's own HF_HUB_CACHE would otherwise take precedence.
+HF_ENV = {"HF_HOME": str(HF_HOME), "HF_HUB_CACHE": str(HF_HOME / "hub")}
+
 # The network input; see find_anything.launch.py.
 NETWORK_WIDTH, NETWORK_HEIGHT = 960, 544
 
@@ -75,6 +85,22 @@ def sha256(path: Path) -> str:
         for block in iter(lambda: stream.read(1 << 20), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def fetch_tokenizer() -> None:
+    """Put the pinned tokenizer where the node's `from_pretrained` looks for `main`."""
+    # Before the import: huggingface_hub writes into its cache directory when imported.
+    os.environ.update(HF_ENV)
+    from huggingface_hub import hf_hub_download
+
+    hub = HF_HOME / "hub"
+    for name in TOKENIZER_FILES:
+        hf_hub_download(TOKENIZER_REPO, name, revision=TOKENIZER_REVISION, cache_dir=hub)
+    # Downloading by commit does not move refs/main; point it at the pinned commit so the
+    # node, which asks for the default revision with the hub offline, resolves to it.
+    refs = hub / f"models--{TOKENIZER_REPO}" / "refs"
+    refs.mkdir(parents=True, exist_ok=True)
+    (refs / "main").write_text(TOKENIZER_REVISION)
 
 
 def to_prompt(text: str) -> str:
@@ -176,7 +202,8 @@ def launch(width: int, height: int, prompt: str, threshold: float) -> subprocess
         f"model_file_path:={MODEL}", f"engine_file_path:={ENGINE}",
         f"default_prompt:={prompt}", f"confidence_threshold:={threshold}",
     ]
-    return subprocess.Popen(command, start_new_session=True)
+    env = {**os.environ, **HF_ENV, "HF_HUB_OFFLINE": "1"}
+    return subprocess.Popen(command, start_new_session=True, env=env)
 
 
 def stop(process: subprocess.Popen[bytes]) -> None:
@@ -313,6 +340,7 @@ def main() -> int:
     CACHE.mkdir(exist_ok=True)
     try:
         download(MODEL_URL, MODEL, MODEL_SHA256)
+        fetch_tokenizer()
         capture = None
         if args.source is None:
             download(SAMPLE_URL, SAMPLE, SAMPLE_SHA256)

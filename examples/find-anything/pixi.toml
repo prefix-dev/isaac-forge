@@ -10,6 +10,8 @@ platforms = [
 ]
 
 [dependencies]
+# Fetches the pinned BERT tokenizer; see find_anything.py.
+huggingface_hub = "*"
 numpy = "*"
 py-opencv = ">=4.13"
 rerun-sdk = ">=0.38,<0.39"

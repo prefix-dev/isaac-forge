@@ -51,8 +51,9 @@ For a machine without a desktop session, add `--no-viewer` to write
 ## First run
 
 The first run downloads NVIDIA's Grounding DINO Swin-Tiny model (722 MB, checksum-pinned)
-and the BERT tokenizer from Hugging Face, then TensorRT builds a GPU-specific engine in
-`.cache/`. That takes a few minutes; later runs start in seconds.
+and the BERT tokenizer from Hugging Face (pinned to a commit), then TensorRT builds a
+GPU-specific engine. Everything goes into `.cache/` in this directory, and the pipeline
+runs with the Hugging Face hub offline, so a run never depends on what is published later. That takes a few minutes; later runs start in seconds.
 
 An NVIDIA GPU and working driver are required. The model is much larger than YOLOv8n, so
 on a Jetson close other GPU-heavy applications first. The model is NVIDIA's TAO
