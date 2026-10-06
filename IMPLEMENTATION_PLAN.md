@@ -2,7 +2,7 @@
 
 A set of runnable examples under `examples/<name>/`, each its own Pixi workspace. Every
 example must work on ROS 2 Lyrical (Isaac ROS 5.0, `isaac-forge/lyrical`, the default
-environment) and should also work on Jazzy (Isaac ROS 4.6, the flat `isaac-forge` channel,
+environment) and should also work on Jazzy (Isaac ROS 4.6, `isaac-forge/jazzy`,
 `pixi run -e jazzy ...`) where 4.6 has the packages.
 
 ## Decisions
@@ -18,7 +18,7 @@ environment) and should also work on Jazzy (Isaac ROS 4.6, the flat `isaac-forge
 | Blocked on Lyrical | cuVSLAM, nvblox, cuMotion examples, deploy and teleop are skipped on Lyrical (`SKIP` in `scripts/gen_source.py`); their examples wait. |
 
 ## Stage 1: yolov8 on Lyrical and Jazzy
-**Goal**: Move `yolo/` to `examples/yolov8/` with `lyrical` (default) and `jazzy` environments.
+**Goal**: Move `yolo/` to `examples/yolov8/` with a default (Lyrical) and a `jazzy` environment.
 **Success Criteria**: `pixi lock` solves both environments on linux-64 and linux-aarch64; `pixi run check` and `pixi run demo` detect objects in `bus.jpg` on a GPU machine for both environments.
 **Tests**: `check` + `demo --no-viewer` on Brev `isaac-ros-builder` (L40S).
 **Status**: Complete (both environments pass on Brev against the published channels)
@@ -44,14 +44,16 @@ environment) and should also work on Jazzy (Isaac ROS 4.6, the flat `isaac-forge
 **Goal**: `examples/stereo-depth/` (ESS from a sample stereo rosbag to a point cloud in Rerun) and `examples/custom-node/` (a C++ package built with `pixi-build-ros` that consumes Isaac ROS output).
 **Status**: Not Started
 
-Later, once the Lyrical skips are fixed: cuVSLAM + nvblox mapping, cuMotion with MoveIt, open-vocabulary detection (Grounding DINO + SAM2).
+Later: SAM2 masks for find-anything; once the Lyrical skips are fixed, cuVSLAM + nvblox mapping and cuMotion with MoveIt.
 
 ## Follow-ups (outside this plan)
-- First full `release.yml` run on main fills `isaac-forge/lyrical`; check the aarch64 job.
+- Undeclared runtime dependencies in ~15 packages, found by auditing their Python and launch files against their run closure (isaac_ros_examples for every `*_core.launch.py`, onnx for the ESS model install, cv_bridge for semantic_label_conversion, ...). Add them via EXTRA_RUN and make the audit part of `pixi run render`.
+- Make `isaac-forge/<distro>`'s CEP-42 relation `overrides: robostack-<distro>` instead of `base`, so our builds win where names overlap (Jazzy's negotiated and topic_based_ros2_control) and an explicit conda-forge after the channel no longer warns.
+- Report to NVIDIA: TensorRTNode's 64 MiB default workspace is too small for Grounding DINO's engine build, and the Grounding DINO preprocessor's one-shot default-prompt handoff races the decoder on a first run.
 - Lyrical skips still to fix: realtime_tools API (isaac-ros-cumotion-controllers, isaac-ros-deploy-ros2-control), the missing cuvslam submodule, nvblox-ros with nvcc 13.4, libdcgm on aarch64 (no tclap), isaac-teleop-core (waits for conda-forge to index dex-retargeting 0.5.0 build 1).
 - Open a PR on RoboStack/ros-lyrical adding `realsense2-camera-msgs` and `moveit2-tutorials`.
 - Open the IsaacCapture PRs from `ruben-arts/IsaacCapture`.
-- Comment on wolfv/isaac-forge#3 linking wolfv/isaac-forge#4.
+- Comment on prefix-dev/isaac-forge#3 linking prefix-dev/isaac-forge#4.
 - Propose the ament_target_dependencies() patches upstream (NVIDIA repos, see upstream/README.md).
 - TensorRT Python bindings for CPython 3.14 in conda-forge/tensorrt-feedstock.
 - `scripts/gen_repack.py` still writes `ros-jazzy-*` repack recipes into the flat `recipes/`.
