@@ -1,28 +1,25 @@
 [workspace]
 name = "isaac-forge-yolov8"
 description = "Isaac ROS YOLOv8 inference with packages from prefix.dev/isaac-forge"
-channels = ["conda-forge"]
+channels = ["https://prefix.dev/conda-forge"]
 # The Isaac Forge binaries target Ubuntu 24.04's glibc floor.
 platforms = [
   { platform = "linux-64", glibc = "2.38" },
   # JetPack 7 on Orin: CUDA 13 driver, SM87 GPU.
-  { platform = "linux-aarch64", glibc = "2.38", cuda = { driver = "13", arch = "8.7" } },
+  { name = "jetson", platform = "linux-aarch64", glibc = "2.38", cuda = { driver = "13", arch = "8.7" } },
 ]
 
 [dependencies]
 numpy = "*"
-py-opencv = ">=4.13,<5"
+py-opencv = ">=4.13"
 pillow = "*"
 rerun-sdk = ">=0.38,<0.39"
 
 # Default: ROS 2 Lyrical with Isaac ROS 5.0.
-[feature.lyrical]
-channels = [
-  { channel = "https://prefix.dev/isaac-forge/lyrical", priority = 2 },
-  { channel = "https://prefix.dev/robostack-lyrical", priority = 1 },
-]
+[environments.lyrical]
+channels = ["https://prefix.dev/isaac-forge/lyrical"]
 
-[feature.lyrical.dependencies]
+[environments.lyrical.dependencies]
 python = "3.14.*"
 ros-lyrical-ros-base = "*"
 ros-lyrical-rclcpp-components = "*"
@@ -35,13 +32,10 @@ ros-lyrical-isaac-ros-tensor-rt = "5.0.*"
 ros-lyrical-isaac-ros-yolov8 = "5.0.*"
 
 # `pixi run -e jazzy ...`: ROS 2 Jazzy with Isaac ROS 4.6, NVIDIA's last Jazzy release.
-[feature.jazzy]
-channels = [
-  { channel = "https://prefix.dev/isaac-forge", priority = 2 },
-  { channel = "https://prefix.dev/robostack-jazzy", priority = 1 },
-]
+[environments.jazzy]
+channels = ["https://prefix.dev/isaac-forge/jazzy"]
 
-[feature.jazzy.dependencies]
+[environments.jazzy.dependencies]
 python = "3.12.*"
 ros-jazzy-ros-base = "*"
 ros-jazzy-rclcpp-components = "*"
@@ -50,10 +44,13 @@ ros-jazzy-isaac-ros-image-proc = "4.6.*"
 ros-jazzy-isaac-ros-dnn-image-encoder = "4.6.*"
 ros-jazzy-isaac-ros-tensor-rt = "4.6.*"
 ros-jazzy-isaac-ros-yolov8 = "4.6.*"
-
-[environments]
-default = ["lyrical"]
-jazzy = ["jazzy"]
+# isaac-forge/jazzy also holds 5.0 builds of some Jazzy packages, and the 4.6 packages
+# depend on these without a version. The 5.0 cvcuda_utils lacks a symbol isaac_ros_tensor_proc
+# 4.6 needs, so keep the whole closure on 4.6.
+ros-jazzy-isaac-ros-common = "4.6.*"
+ros-jazzy-isaac-ros-cvcuda-utils = "4.6.*"
+ros-jazzy-isaac-ros-tensor-list-interfaces = "4.6.*"
+ros-jazzy-isaac-ros-vpi-utils = "4.6.*"
 
 [tasks.check]
 description = "Show that Pixi resolved the Isaac ROS packages from isaac-forge"
