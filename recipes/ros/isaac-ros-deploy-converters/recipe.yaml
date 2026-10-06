@@ -88,6 +88,7 @@ requirements:
     - ninja
     - pkg-config
   host:
+    - onnx
     - pytorch-gpu ==2.13.0 cuda130_generic_*_202
     - ros-${{ ros_distro }}-ament-cmake
     - ros-${{ ros_distro }}-ament-cmake-python
@@ -110,6 +111,7 @@ requirements:
     - cuda-nvtx-dev
   run:
     - __glibc >=2.38
+    - onnx
     - pytorch-gpu ==2.13.0 cuda130_generic_*_202
     - ros-${{ ros_distro }}-cuda-buffer
     - ros-${{ ros_distro }}-geometry-msgs

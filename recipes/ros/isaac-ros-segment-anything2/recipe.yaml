@@ -85,6 +85,9 @@ requirements:
     - ninja
     - pkg-config
   host:
+    - onnx
+    - onnxconverter-common
+    - onnxscript
     - pip
     - py-opencv
     - pytorch-gpu ==2.13.0 cuda130_generic_*_202
@@ -102,6 +105,7 @@ requirements:
     - ros-${{ ros_distro }}-std-msgs
     - ros-${{ ros_distro }}-tensor-msgs
     - ros-${{ ros_distro }}-vision-msgs
+    - sam2
     - ros2-distro-mutex
     - ros-${{ ros_distro }}-ament-cmake-auto
     - cuda-version 13.*
@@ -111,6 +115,9 @@ requirements:
     - pyyaml
   run:
     - __glibc >=2.38
+    - onnx
+    - onnxconverter-common
+    - onnxscript
     - pip
     - py-opencv
     - pytorch-gpu ==2.13.0 cuda130_generic_*_202
@@ -127,6 +134,7 @@ requirements:
     - ros-${{ ros_distro }}-std-msgs
     - ros-${{ ros_distro }}-tensor-msgs
     - ros-${{ ros_distro }}-vision-msgs
+    - sam2
 
 tests:
   - package_contents:
