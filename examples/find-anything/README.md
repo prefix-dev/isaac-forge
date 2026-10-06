@@ -14,8 +14,8 @@ Unlike YOLO's fixed 80 classes, the prompt can be anything you can describe: "cu
 
 ```bash
 cd examples/find-anything
-pixi run -e lyrical check
-pixi run -e lyrical demo
+pixi run check
+pixi run demo
 ```
 
 `demo` looks for the cats, remote controls and couch in a COCO sample photo, prints what it
@@ -23,7 +23,7 @@ found, opens Rerun with the boxes, and writes `.cache/find_anything_result.png`.
 own prompt with `--prompt`:
 
 ```bash
-pixi run -e lyrical demo --prompt "cat ears, cat tail"
+pixi run demo --prompt "cat ears, cat tail"
 ```
 
 The `jazzy` environment runs the same example on ROS 2 Jazzy with Isaac ROS 4.6:
@@ -35,14 +35,14 @@ pixi run -e jazzy demo
 ## Live webcam
 
 ```bash
-pixi run -e lyrical webcam
+pixi run webcam
 ```
 
 While it runs, type a new prompt in the terminal and press Enter; the boxes in Rerun follow
 it. `--source` also takes a video file or stream URL:
 
 ```bash
-pixi run -e lyrical python find_anything.py --source /path/to/video.mp4 --prompt "dog, ball"
+pixi run python find_anything.py --source /path/to/video.mp4 --prompt "dog, ball"
 ```
 
 For a machine without a desktop session, add `--no-viewer` to write

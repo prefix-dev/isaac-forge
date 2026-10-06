@@ -16,10 +16,10 @@ pillow = "*"
 rerun-sdk = ">=0.38,<0.39"
 
 # Default: ROS 2 Lyrical with Isaac ROS 5.0.
-[environments.lyrical]
+[environments.default]
 channels = ["https://prefix.dev/isaac-forge/lyrical"]
 
-[environments.lyrical.dependencies]
+[environments.default.dependencies]
 python = "3.14.*"
 ros-lyrical-ros-base = "*"
 ros-lyrical-rclcpp-components = "*"

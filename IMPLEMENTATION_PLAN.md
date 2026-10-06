@@ -10,7 +10,7 @@ environment) and should also work on Jazzy (Isaac ROS 4.6, the flat `isaac-forge
 | Topic | Decision |
 |---|---|
 | Layout | `examples/<name>/` with its own `pixi.toml`, `pixi.lock`, README and scripts, so one can be copied out on its own. |
-| Distros | Inline environments `[environments.lyrical]` and `[environments.jazzy]` carry the channel (`isaac-forge/<distro>`, which also serves its RoboStack), Python and `ros-<distro>-*` deps. Shared Python deps sit in `[dependencies]`. |
+| Distros | Inline environments `[environments.default]` (Lyrical) and `[environments.jazzy]` carry the channel (`isaac-forge/<distro>`, which also serves its RoboStack), Python and `ros-<distro>-*` deps. Shared Python deps sit in `[dependencies]`. |
 | Hardware | An NVIDIA GPU only. Inputs are sample images, sample rosbags, or an optional webcam; no RealSense, ZED or robot. |
 | Data | Downloaded on first use into `.cache/`, pinned by URL and SHA-256. |
 | Visualization | Rerun, with `--no-viewer` writing a `.rrd` for headless machines. |

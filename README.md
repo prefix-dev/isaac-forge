@@ -70,7 +70,7 @@ channel pages. Pixi resolves the package's NITROS,
 ROS, CUDA, and other library dependencies automatically.
 
 For complete working projects, see [`examples/`](examples/). Each one is a Pixi workspace
-with a `lyrical` and a `jazzy` environment (`pixi run -e lyrical ...`):
+that runs on Lyrical by default and on Jazzy with `pixi run -e jazzy ...`:
 
 - [`examples/yolov8`](examples/yolov8/README.md) runs YOLOv8 TensorRT inference on an image,
   video, webcam, or RTSP stream.
