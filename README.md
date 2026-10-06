@@ -1,18 +1,33 @@
 # isaac-forge
 
-`isaac-forge` packages Isaac ROS 5.0.0 for ROS 2 Jazzy as conda packages. The
+`isaac-forge` packages Isaac ROS for ROS 2 Lyrical (5.0) and ROS 2 Jazzy (4.6) as conda packages. The
 packages work alongside [RoboStack](https://robostack.github.io/) and can be installed with
 [Pixi](https://pixi.sh/) on x86_64 Linux and Jetson/ARM64.
 
 ## Using the packages
 
-The packages are published in the public
-[`isaac-forge` channel on prefix.dev](https://prefix.dev/channels/isaac-forge). A Pixi
-environment should use these channels, in this order:
+The packages are published on prefix.dev:
 
-1. `isaac-forge` for Isaac ROS and the few dependencies packaged here
-2. `robostack-jazzy` for ROS 2 Jazzy
+| ROS 2 | Isaac ROS | Isaac ROS channel | RoboStack channel | Python |
+|---|---|---|---|---|
+| Lyrical | 5.0 | [`isaac-forge/lyrical`](https://prefix.dev/channels/isaac-forge/lyrical) | `robostack-lyrical` | 3.14 |
+| Jazzy | 4.6 | [`isaac-forge`](https://prefix.dev/channels/isaac-forge) | `robostack-jazzy` | 3.12 |
+
+Isaac ROS 5.0 needs the ROS 2 buffer API that arrives with Lyrical: its GPU image and tensor
+pipeline exchanges `rosidl::Buffer` message fields, which Jazzy's messages do not have.
+NVIDIA publishes 5.0 for Lyrical only, so Jazzy stays on 4.6, NVIDIA's last Jazzy release.
+Those are the builds this repository made before the 5.0 upgrade, in the flat `isaac-forge`
+channel, which no longer receives updates. It also holds older 4.5 and some 5.0 Jazzy
+builds, so pin `"4.6.*"`.
+
+A Pixi environment should use these channels, in this order:
+
+1. the Isaac ROS channel, for Isaac ROS and the few dependencies packaged here
+2. `robostack-<distro>` for ROS 2 itself
 3. `conda-forge` for everything else
+
+Lyrical is new: packages that fail to build or test there are skipped rather than blocking
+a release, so check the channel page for what is available.
 
 Here is a small environment for the Isaac ROS YOLOv8 pipeline:
 
@@ -20,8 +35,8 @@ Here is a small environment for the Isaac ROS YOLOv8 pipeline:
 # pixi.toml
 [workspace]
 channels = [
-  "https://prefix.dev/isaac-forge",
-  "https://prefix.dev/robostack-jazzy",
+  "https://prefix.dev/isaac-forge/lyrical",
+  "https://prefix.dev/robostack-lyrical",
   "conda-forge",
 ]
 platforms = [
@@ -31,12 +46,12 @@ platforms = [
 ]
 
 [dependencies]
-python = "3.12.*"
-ros-jazzy-ros-base = "*"
-ros-jazzy-isaac-ros-image-proc = "5.0.*"
-ros-jazzy-isaac-ros-dnn-image-encoder = "5.0.*"
-ros-jazzy-isaac-ros-tensor-rt = "5.0.*"
-ros-jazzy-isaac-ros-yolov8 = "5.0.*"
+python = "3.14.*"
+ros-lyrical-ros-base = "*"
+ros-lyrical-isaac-ros-image-proc = "5.0.*"
+ros-lyrical-isaac-ros-dnn-image-encoder = "5.0.*"
+ros-lyrical-isaac-ros-tensor-rt = "5.0.*"
+ros-lyrical-isaac-ros-yolov8 = "5.0.*"
 ```
 
 Install it and run ROS commands through Pixi:
@@ -52,10 +67,13 @@ compute capability to choose the Orin TensorRT build. The packages target the Ub
 glibc floor (`2.38`) and the CUDA 13 stack, so GPU workloads also need a compatible NVIDIA
 driver. Pixi installs the user-space CUDA libraries; it does not install the host driver.
 
+For Jazzy, use `isaac-forge` and `robostack-jazzy`, `python = "3.12.*"`, the
+`ros-jazzy-*` package names, and `"4.6.*"`.
+
 Package names follow the usual RoboStack convention: the ROS package
-`isaac_ros_visual_slam`, for example, is named
+`isaac_ros_visual_slam`, for example, is named `ros-lyrical-isaac-ros-visual-slam` or
 `ros-jazzy-isaac-ros-visual-slam`. You can browse or search all available names on the
-[channel page](https://prefix.dev/channels/isaac-forge). Pixi resolves the package's NITROS,
+channel pages. Pixi resolves the package's NITROS,
 ROS, CUDA, and other library dependencies automatically.
 
 For a complete working project, see [`yolo/`](yolo/README.md). Its `pixi.toml` consumes the
@@ -78,7 +96,7 @@ The channel contains:
 - cloud control, VDA5050, deployment, teleoperation, data recording, RealSense, ZED, and
   Unitree G1 integration;
 - the Isaac ROS and ROS 2 benchmark harnesses, examples, interfaces, and a handful of
-  open-source ROS dependencies not yet available from RoboStack Jazzy.
+  open-source ROS dependencies not yet available from RoboStack.
 
 The `*-models-install` packages provide NVIDIA's asset download/install tooling. Model
 weights and GPU-specific TensorRT engine plans are not baked into the conda packages.
@@ -99,10 +117,19 @@ git clone https://github.com/wolfv/isaac-forge.git
 cd isaac-forge
 pixi install
 
-pixi run build                                  # resumable full build
-pixi run build -- --recipe ros-jazzy-isaac-ros-nitros
+pixi run build                                  # resumable full build (Lyrical)
+pixi run build -- --recipe isaac-ros-common
 pixi run test                                   # test packages in clean environments
+pixi run render                                 # check every recipe renders, no build
 ```
+
+The recipes in `recipes/ros/` are distro-neutral: `variants-lyrical.yaml` sets `ros_distro`,
+which names the packages `ros-lyrical-*`, and the Python Lyrical's RoboStack uses, and
+`$ROS_DISTRO` conditions in upstream `package.xml` files become recipe selectors. Another
+distro needs a `variants-<distro>.yaml` and a matrix entry in `release.yml`. The NVIDIA
+packages in `recipes/foundation/` do not depend on the distro.
+
+Jazzy is not built from this tree; its 4.6 recipes are in git history at `df4b8e0`.
 
 Packages are written to `output/linux-64/`, `output/linux-aarch64/`, and `output/noarch/`.
 Builds and tests are separate because a package's test environment may need another package
@@ -112,7 +139,7 @@ CUDA packages should be built and tested on the target architecture. On a native
 other ARM64 machine:
 
 ```bash
-pixi run arm64-render
+pixi run render
 pixi run build -- --target linux-aarch64
 pixi run test
 ```
@@ -139,7 +166,7 @@ python scripts/gen_repack.py --help
 Most Isaac ROS packages in this channel are built from source against RoboStack. Some central
 NVIDIA components have no published source, so they are packaged from pinned vendor payloads
 instead. That binary foundation includes VPI, TensorRT, cuVSLAM, cuAprilTags, and cuMotion.
-A small third group fills gaps in the current RoboStack Jazzy channel.
+A small third group fills gaps in the current RoboStack channels.
 
 Every vendor input is selected per architecture and checksum-verified. Git LFS objects are
 fetched from their upstream media endpoints rather than packaging the pointer files.
@@ -156,13 +183,16 @@ work behind the recipes. Upstream problems and proposed fixes are collected in
 ## Repository layout
 
 ```text
-recipes/                 rattler-build recipes
+recipes/foundation/      NVIDIA packages, independent of the ROS distro
+recipes/ros/             ROS packages, built per distro as ros-<distro>-*
 scripts/build_all.sh     resumable build driver
 scripts/test_all.sh      clean-environment package tests
 scripts/gen_source.py    source-recipe generator
+scripts/test_variants.py checks the recipes render correctly for every distro
 scripts/gen_repack.py    vendor-package recipe generator
 packages.json            generated Isaac ROS package inventory
-variants.yaml            shared CUDA, Python, and compiler pins
+variants.yaml            shared CUDA and compiler pins
+variants-<distro>.yaml   ros_distro and Python per ROS distro
 yolo/                    YOLOv8 inference example for x86_64 and Jetson/ARM64
 output/                  local package channel (gitignored)
 ```

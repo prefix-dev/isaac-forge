@@ -1,0 +1,74 @@
+# Isaac ROS for Jazzy and Lyrical
+
+Publish Isaac ROS for ROS 2 Lyrical to `prefix.dev/isaac-forge/lyrical`, while Jazzy keeps
+Isaac ROS 4.6. Supersedes wolfv/isaac-forge#3 (`lyrical-build-preview`).
+
+**Change of direction (after Stage 3).** Isaac ROS 5.0's GPU image and tensor pipeline
+(`cuda_buffer`, `cvcuda_conversions`, image_proc, tensor_proc and ~45 packages above them)
+needs the ROS 2 buffer API: `rosidl_generator_cpp` from Lyrical emits every `uint8[]` field as
+`rosidl::Buffer<uint8_t>`. Jazzy's messages do not, and backporting it would fork Jazzy's
+message ABI. NVIDIA ships 5.0 for Lyrical only (255 `ros-lyrical-*` debs, no `ros-jazzy-*`).
+So **Jazzy stays on Isaac ROS 4.6**, NVIDIA's last Jazzy release, served by the tested
+builds already in the old `isaac-forge` channel, and **main builds Lyrical 5.0**.
+
+## Decisions
+
+| Topic | Decision |
+|---|---|
+| Recipes | One distro-neutral recipe per package. `ros_distro` is a variant key; names and deps use `ros-${{ ros_distro }}-...`; `$ROS_DISTRO` conditions in `package.xml` become `if: ros_distro == ...` selectors. Only Lyrical is built today; another distro is a variant file and a matrix entry. |
+| Variant files | `variants.yaml` keeps shared pins and **no `python`**. `variants-lyrical.yaml`: `ros_distro: lyrical`, `python: 3.14.*`. No `channel_sources`; channels are passed with `-c`. |
+| Layout | `recipes/foundation/` = NVIDIA packages (libdcgm, libv4l, nvv4l2, tensorrt, tensorrt-conda-forge, triton-server, vpi), built with `variants.yaml` alone. `recipes/ros/` = ROS packages, built with the distro file too. |
+| Jazzy | Stays on Isaac ROS 4.6: the builds already in the flat `isaac-forge` channel, which the README points Jazzy users to (pin `4.6.*`). No copy to `isaac-forge/jazzy`. If a 4.6 fix is ever needed, branch from `df4b8e0`. |
+| Removed | Jazzy-only pieces that existed to build 5.0 on Jazzy: `variants-jazzy.yaml`, the urdf `model.h` patch, the `rosidl-buffer*` recipes (robostack-lyrical has them), `tensorrt-python` (Jetson CPython 3.12 binding; its 4.6-era builds stay in the isaac-forge channel). |
+| CI | `release.yml`: `plan` → `render` + `build` (platform × distro, distro = lyrical). Each build job builds foundations then ROS, tests, and publishes to `isaac-forge/<distro>`. Channels: `./output` → `isaac-forge/<distro>` → `robostack-<distro>` → `conda-forge`. |
+| Old channel | Stop publishing to the flat `isaac-forge` channel and leave it readable. README points users to the per-distro channels. |
+| Lyrical failures | Publish what passes, quarantine failures, report them as **warnings** (`strict: false` in the matrix) until Lyrical reaches parity. |
+| PR CI | On `pull_request`, build and test only the recipes the PR changed; the render job covers everything else. Uploads never run on PRs. |
+| Missing Lyrical deps | `realsense2-camera-msgs`, `moveit2-tutorials`: upstream PR to RoboStack/ros-lyrical. Until it merges, the 3 recipes that use them skip Lyrical. |
+| flexiv-msgs | In neither RoboStack distro. Dropped from isaac-ros-deploy-reference-applications via `DROP_DEPS` (done). |
+| Publishing auth | `isaac-forge/lyrical` already has the `release.yml` trusted publisher configured. |
+
+## Stage 1: Distro-neutral recipes
+**Goal**: `gen_source.py` emits `recipes/ros/<name>/` with `ros_distro`; foundations move to `recipes/foundation/`; `$ROS_DISTRO` conditions become selectors; build scripts export `ROS_DISTRO` (isaac_deploy_core's CMake branches on it).
+**Tests**: `scripts/test_variants.py`.
+**Status**: Complete (built for both distros first; Stage 5 removes the Jazzy side)
+
+## Stage 2: Local tooling
+**Goal**: `scripts/build_all.sh` / `scripts/test_all.sh` take `--distro` and build `recipes/foundation` before `recipes/ros`; `pixi run render` runs the render test.
+**Success Criteria**: a full Lyrical build on linux-64 (Brev `isaac-ros-builder`).
+**Status**: Complete (full Lyrical linux-64 build on Brev `isaac-ros-builder`: 140 of 154 recipes build, 140 of 141 packages pass their tests; failures listed under follow-ups)
+
+## Stage 3: release.yml
+**Goal**: The CI layout above.
+**Success Criteria**: a PR touching one ROS recipe builds and tests only that recipe and uploads nothing; a deliberate Lyrical test failure is a warning and the run stays green.
+**Tests**: The scenarios above, run on a fork or branch before merging.
+**Status**: In Progress (two-stage version written and linted; Stage 5 simplifies it)
+
+## Stage 5: Lyrical-only main, frozen Jazzy 4.6
+**Goal**: Remove the Jazzy build path from main and simplify CI to one build job per platform × distro.
+**Success Criteria**:
+- `pixi run render` passes for Lyrical on both platforms; `grep -rn jazzy recipes/` finds nothing.
+**Tests**: `scripts/test_variants.py`.
+**Status**: Complete
+
+## Stage 4: Upstream and rollout
+**Goal**: Publish both channels for real.
+- First full `release.yml` run on main fills `isaac-forge/lyrical`.
+- Open a PR on RoboStack/ros-lyrical adding `realsense2-camera-msgs` and `moveit2-tutorials`. Link it from the skips.
+- Re-lock `yolo/` against the new channels.
+- Comment on wolfv/isaac-forge#3 linking the new PR.
+**Status**: Not Started
+
+Before landing: invoke the `adversarial-review` skill and follow it.
+
+## Follow-ups (outside this plan)
+- Lyrical parity: 157 of 168 recipes build on linux-64 and all 258 packages pass their tests. Fixed so far: ament_target_dependencies() removal (patches in 11 packages, PickNik's upstream fix for topic_based_ros2_control), CUDA 13.4 compiler, isaac_ros_dope's undeclared isaac_ros_common, vda5050_action_handler_plugins' undeclared ament_cmake_ros. Remaining, all shipped by NVIDIA for Lyrical:
+  - isaac-ros-cumotion-controllers, isaac-ros-deploy-ros2-control: Lyrical's realtime_tools deprecates `realtime_buffer.hpp` (a `#warning`, fatal here) and changes the `RealtimeBuffer` template API.
+  - isaac-ros-cuvslam: release tarball lacks the cuvslam submodule (blocks nvblox-examples-bringup, isaac-ros-nvblox).
+  - nvblox-ros: `mesh_integrator_appearance.cu(84): error: type name is not allowed` with nvcc 13.4.
+  - isaac-teleop-core: IsaacTeleop tarball sha256 drift (also on Jazzy; blocks isaac-ros-teleop).
+  - Propose the ament_target_dependencies() patches upstream (NVIDIA repos, see upstream/README.md).
+- Jazzy 5.0 failures found on the way, relevant only if Jazzy ever moves past 4.6: `message_filters::Subscriber` API break (topic-tools, realsense-splitter, multi-realsense-emitter-synchronizer), IsaacTeleop tarball sha256 drift (isaac-teleop-core).
+- TensorRT Python bindings for Lyrical (CPython 3.14). conda-forge's tensorrt-feedstock ships only the C++ libraries; PyPI has cp314 `tensorrt-cu13-bindings` from 11.1.0.106 onward, matching x86's conda-forge TRT. Propose bindings upstream in conda-forge/tensorrt-feedstock, plus a Jetson source build.
+- Remove the Lyrical skips once RoboStack ships the missing packages; turn on `strict` for Lyrical at parity.
+- `scripts/gen_repack.py` still writes `ros-jazzy-*` repack recipes into the flat `recipes/`; no ROS recipe uses it any more.

@@ -10,8 +10,12 @@
 # not exist in output/ yet. Testing inline therefore fails for reasons that have nothing to
 # do with the package under test. By the time this runs, the whole set is present.
 #
-#     ./scripts/test_all.sh                 # every package in output/
-#     ./scripts/test_all.sh nvblox visual   # only packages whose filename matches a pattern
+#     ./scripts/test_all.sh                    # every Lyrical package in output/
+#     ./scripts/test_all.sh --distro <distro>  # another variants-<distro>.yaml
+#     ./scripts/test_all.sh nvblox visual      # only packages whose filename matches a pattern
+#
+# output/ can hold several distros. ROS packages of the other distro are left out, since they
+# resolve against a different RoboStack; foundation packages are tested with either.
 #
 # Every package is tested before anything is reported, so one broken package shows up as one
 # failure rather than hiding the rest.
@@ -26,15 +30,29 @@ case "$(uname -m)" in
   *) echo "unsupported test architecture: $(uname -m)" >&2; exit 2 ;;
 esac
 TARGET_PLATFORM="${ISAAC_FORGE_TARGET_PLATFORM:-${NATIVE_PLATFORM}}"
+DISTRO="${ISAAC_FORGE_DISTRO:-lyrical}"
+if [ "${1:-}" = --distro ]; then
+  [ "$#" -ge 2 ] || { echo "--distro requires a name with a variants-<distro>.yaml" >&2; exit 2; }
+  DISTRO="$2"; shift 2
+fi
+[ -f "variants-${DISTRO}.yaml" ] || { echo "unknown distro: ${DISTRO}" >&2; exit 2; }
 if [ "${TARGET_PLATFORM}" != "${NATIVE_PLATFORM}" ]; then
   echo "package tests must run natively (${NATIVE_PLATFORM}), not for ${TARGET_PLATFORM}" >&2
   exit 2
 fi
 
-CHANNELS=(-c ./output -c https://prefix.dev/isaac-forge -c https://prefix.dev/robostack-jazzy -c conda-forge)
+CHANNELS=(-c ./output -c "https://prefix.dev/isaac-forge/${DISTRO}"
+          -c "https://prefix.dev/robostack-${DISTRO}" -c conda-forge)
 
 shopt -s nullglob
-pkgs=(output/"${TARGET_PLATFORM}"/*.conda output/noarch/*.conda)
+pkgs=()
+for p in output/"${TARGET_PLATFORM}"/*.conda output/noarch/*.conda; do
+  case "$(basename "${p}")" in
+    "ros-${DISTRO}-"*) pkgs+=("${p}") ;;
+    ros-*) ;;
+    *) pkgs+=("${p}") ;;
+  esac
+done
 present=${#pkgs[@]}
 
 if [ "${present}" -eq 0 ]; then
@@ -59,7 +77,7 @@ if [ "$#" -gt 0 ]; then
   fi
 fi
 
-echo "testing ${#pkgs[@]} package(s)"
+echo "testing ${#pkgs[@]} ${DISTRO} package(s)"
 mkdir -p output
 : > output/test-failures.log
 failed=()

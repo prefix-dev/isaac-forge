@@ -1,0 +1,155 @@
+From: Isaac Forge <noreply@example.com>
+Subject: [PATCH] Link targets instead of ament_target_dependencies()
+
+ament_target_dependencies() was removed from ament_cmake in 2.8.6 (ament/ament_cmake#614),
+so this no longer configures on ROS 2 Lyrical. Link each dependency's exported
+${<pkg>_TARGETS} instead, as nvblox_ros already does. Plain signature, matching the
+other target_link_libraries() calls on these targets.
+---
+--- a/isaac_deploy/isaac_ros_deploy_converters/CMakeLists.txt
++++ b/isaac_deploy/isaac_ros_deploy_converters/CMakeLists.txt
+@@ -56,14 +56,13 @@
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   $<INSTALL_INTERFACE:include>
+ )
+-ament_target_dependencies(converters
+-  rclcpp
+-  isaac_ros_deploy_interfaces
+-  sensor_msgs
+-  geometry_msgs
+-  nav_msgs
+-)
+ target_link_libraries(converters
++  ${rclcpp_TARGETS}
++  ${isaac_ros_deploy_interfaces_TARGETS}
++  ${sensor_msgs_TARGETS}
++  ${geometry_msgs_TARGETS}
++  ${nav_msgs_TARGETS})
++target_link_libraries(converters
+   isaac_deploy_core::types
+   ${TORCH_LIBRARIES}
+ )
+@@ -83,14 +82,13 @@
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   $<INSTALL_INTERFACE:include>
+ )
+-ament_target_dependencies(tensor_list_utils
+-  cuda_buffer
+-  rclcpp
+-  isaac_ros_tensor_msgs
+-  tensor_msgs
+-  std_msgs
+-)
+ target_link_libraries(tensor_list_utils
++  ${cuda_buffer_TARGETS}
++  ${rclcpp_TARGETS}
++  ${isaac_ros_tensor_msgs_TARGETS}
++  ${tensor_msgs_TARGETS}
++  ${std_msgs_TARGETS})
++target_link_libraries(tensor_list_utils
+   CUDA::cudart
+   isaac_deploy_core::types
+   isaac_deploy_core::tensor_utils
+@@ -112,13 +110,12 @@
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   $<INSTALL_INTERFACE:include>
+ )
+-ament_target_dependencies(output_converters
+-  rclcpp
+-  isaac_ros_deploy_interfaces
+-  sensor_msgs
+-  geometry_msgs
+-)
+ target_link_libraries(output_converters
++  ${rclcpp_TARGETS}
++  ${isaac_ros_deploy_interfaces_TARGETS}
++  ${sensor_msgs_TARGETS}
++  ${geometry_msgs_TARGETS})
++target_link_libraries(output_converters
+   tensor_list_utils
+   isaac_deploy_core::types
+   ${TORCH_LIBRARIES}
+@@ -144,17 +141,16 @@
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   $<INSTALL_INTERFACE:include>
+ )
+-ament_target_dependencies(isaac_ros_deploy_converters_lib
+-  rclcpp
+-  rclcpp_components
+-  isaac_ros_deploy_interfaces
+-  isaac_ros_tensor_msgs
+-  tensor_msgs
+-  sensor_msgs
+-  geometry_msgs
+-  std_msgs
+-)
+ target_link_libraries(isaac_ros_deploy_converters_lib
++  ${rclcpp_TARGETS}
++  ${rclcpp_components_TARGETS}
++  ${isaac_ros_deploy_interfaces_TARGETS}
++  ${isaac_ros_tensor_msgs_TARGETS}
++  ${tensor_msgs_TARGETS}
++  ${sensor_msgs_TARGETS}
++  ${geometry_msgs_TARGETS}
++  ${std_msgs_TARGETS})
++target_link_libraries(isaac_ros_deploy_converters_lib
+   converters
+   output_converters
+   tensor_list_utils
+@@ -237,7 +233,9 @@
+ # libraries, so dlopen of composable node .so files that need them fails.
+ # TODO(lgulich): Remove this again
+ add_executable(component_container src/nodes/component_container_main.cpp)
+-ament_target_dependencies(component_container rclcpp rclcpp_components)
++target_link_libraries(component_container
++  ${rclcpp_TARGETS}
++  ${rclcpp_components_TARGETS})
+ target_link_libraries(component_container isaac_ros_deploy_converters_lib)
+ set_target_properties(component_container PROPERTIES
+   INSTALL_RPATH "${TORCH_INSTALL_PREFIX}/lib;$ORIGIN/.."
+@@ -316,10 +314,9 @@
+   target_include_directories(test_message_to_tensor_converters PRIVATE
+     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   )
+-  ament_target_dependencies(test_message_to_tensor_converters
+-    rclcpp
+-    geometry_msgs
+-  )
++  target_link_libraries(test_message_to_tensor_converters
++    ${rclcpp_TARGETS}
++    ${geometry_msgs_TARGETS})
+   set_target_properties(test_message_to_tensor_converters PROPERTIES
+     INSTALL_RPATH "${TORCH_INSTALL_PREFIX}/lib"
+     BUILD_RPATH "${TORCH_INSTALL_PREFIX}/lib"
+@@ -335,10 +332,9 @@
+   target_include_directories(test_joint_command_trajectory_converter PRIVATE
+     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   )
+-  ament_target_dependencies(test_joint_command_trajectory_converter
+-    rclcpp
+-    isaac_ros_deploy_interfaces
+-  )
++  target_link_libraries(test_joint_command_trajectory_converter
++    ${rclcpp_TARGETS}
++    ${isaac_ros_deploy_interfaces_TARGETS})
+   set_target_properties(test_joint_command_trajectory_converter PROPERTIES
+     INSTALL_RPATH "${TORCH_INSTALL_PREFIX}/lib"
+     BUILD_RPATH "${TORCH_INSTALL_PREFIX}/lib"
+@@ -354,12 +350,11 @@
+   target_include_directories(test_tensor_list_utils PRIVATE
+     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   )
+-  ament_target_dependencies(test_tensor_list_utils
+-    cuda_buffer
+-    rclcpp
+-    isaac_ros_tensor_msgs
+-    tensor_msgs
+-  )
++  target_link_libraries(test_tensor_list_utils
++    ${cuda_buffer_TARGETS}
++    ${rclcpp_TARGETS}
++    ${isaac_ros_tensor_msgs_TARGETS}
++    ${tensor_msgs_TARGETS})
+   set_target_properties(test_tensor_list_utils PROPERTIES
+     INSTALL_RPATH "${TORCH_INSTALL_PREFIX}/lib"
+     BUILD_RPATH "${TORCH_INSTALL_PREFIX}/lib"

@@ -69,7 +69,7 @@ MAP = {
     # Only the blob repacks declare it and none of our source builds call
     # find_package(magic_enum), so there is nothing to gain from a vendored copy.
     "ros-jazzy-magic-enum": "magic_enum",
-    # conda-forge has no v4l package; see recipes/libv4l.
+    # conda-forge has no v4l package; see recipes/foundation/libv4l.
     "libv4l-0t64": "libv4l",
     "libv4lconvert0t64": "libv4l",
     "libv4l-dev": "libv4l",

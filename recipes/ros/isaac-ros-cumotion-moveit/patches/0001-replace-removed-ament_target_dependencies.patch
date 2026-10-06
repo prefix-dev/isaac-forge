@@ -1,0 +1,21 @@
+From: Isaac Forge <noreply@example.com>
+Subject: [PATCH] Replace removed ament_target_dependencies()
+
+ament_cmake 2.8.6 removed ament_target_dependencies() (ament/ament_cmake#614), so this
+no longer configures on ROS 2 Lyrical. ament_cmake_auto's
+ament_auto_depend_on_packages() is its replacement: it links ${<pkg>_TARGETS} where a
+package exports targets and falls back to <pkg>_INCLUDE_DIRS/_LIBRARIES otherwise, which
+isaac_ros_common still needs. Without SCOPE it uses the plain target_link_libraries()
+signature, matching the other calls on these targets.
+---
+--- a/isaac_ros_cumotion_moveit/CMakeLists.txt
++++ b/isaac_ros_cumotion_moveit/CMakeLists.txt
+@@ -36,7 +36,7 @@
+ 
+ set_target_properties(${MOVEIT_LIB_NAME} PROPERTIES VERSION "${${PROJECT_NAME}_VERSION}")
+ 
+-ament_target_dependencies(${MOVEIT_LIB_NAME} ${THIS_PACKAGE_INCLUDE_DEPENDS})
++ament_auto_depend_on_packages(${MOVEIT_LIB_NAME} PACKAGES ${THIS_PACKAGE_INCLUDE_DEPENDS})
+ 
+ 
+ #############

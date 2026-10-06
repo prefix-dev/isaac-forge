@@ -1,0 +1,26 @@
+From: Isaac Forge <noreply@example.com>
+Subject: [PATCH] Link targets instead of ament_target_dependencies()
+
+ament_target_dependencies() was removed from ament_cmake in 2.8.6 (ament/ament_cmake#614),
+so this no longer configures on ROS 2 Lyrical. Link each dependency's exported
+${<pkg>_TARGETS} instead, as nvblox_ros already does. Plain signature, matching the
+other target_link_libraries() calls on these targets.
+---
+--- a/unitree_hg/unitree_hg_ros2_control/CMakeLists.txt
++++ b/unitree_hg/unitree_hg_ros2_control/CMakeLists.txt
+@@ -97,8 +97,13 @@
+   $<INSTALL_INTERFACE:include>)
+ target_link_libraries(${PROJECT_NAME} unitree_sdk2)
+ set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
+-ament_target_dependencies(${PROJECT_NAME}
+-  hardware_interface pluginlib rclcpp rclcpp_lifecycle diagnostic_msgs realtime_tools)
++target_link_libraries(${PROJECT_NAME}
++  ${hardware_interface_TARGETS}
++  ${pluginlib_TARGETS}
++  ${rclcpp_TARGETS}
++  ${rclcpp_lifecycle_TARGETS}
++  ${diagnostic_msgs_TARGETS}
++  ${realtime_tools_TARGETS})
+ 
+ target_sources(${PROJECT_NAME} PRIVATE src/unitree_hg_crc.cpp)
+ target_sources(${PROJECT_NAME} PRIVATE src/channel_factory_guard.cpp)

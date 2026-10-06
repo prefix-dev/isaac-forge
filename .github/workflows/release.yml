@@ -1,8 +1,14 @@
 name: release
 
-# Builds every recipe in recipes/ for x86_64 and ARM64, tests the resulting
-# artifacts natively on GitHub-hosted runners, and publishes new packages to
-# https://prefix.dev/channels/isaac-forge.
+# Builds every recipe for x86_64 and ARM64, tests the packages natively on GitHub-hosted
+# runners, and publishes them to https://prefix.dev/channels/isaac-forge/lyrical.
+#
+#   plan            which recipes this run builds
+#   render          every recipe renders for every distro (scripts/test_variants.py)
+#   build           per platform and ROS distro: recipes/foundation, then recipes/ros
+#                   against that distro's RoboStack, then tests, then publish
+#
+# Pull requests build and test the recipes they change and publish nothing.
 #
 # The filename matters: the prefix.dev trusted publisher is bound to `release.yml`.
 # Renaming this file breaks authentication.
@@ -11,48 +17,122 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+  pull_request:
   workflow_dispatch:
     inputs:
       recipes:
         description: >-
           Optional comma/space-separated recipe directory names to build, test, and publish
-          in the given order (for example: libv4l,nvv4l2). Empty builds everything.
+          (for example: libv4l,nvv4l2); they are built in dependency order. Names are looked
+          up in recipes/foundation and recipes/ros. Empty builds everything.
         required: false
         type: string
 
 permissions:
   contents: read
-  # Required for trusted publishing. rattler-build exchanges the GitHub OIDC token
-  # with prefix.dev itself, so there is no API key anywhere in this repo.
-  id-token: write
 
 env:
   # Hosted runners have no GPU. Let rattler-build solve conda-forge's CUDA PyTorch
   # packages; their import tests do not require a driver.
   CONDA_OVERRIDE_CUDA: "13.3"
 
-# Never run two release workflows at once, and never cancel one midway through uploading.
-# The two architecture jobs in one workflow may upload concurrently; their conda subdirs
-# are disjoint (`linux-64` and `linux-aarch64`).
+# Never run two releases at once, and never cancel one midway through uploading. A newer
+# push to the same pull request does replace the older run.
 concurrency:
-  group: release
-  cancel-in-progress: false
+  group: ${{ github.event_name == 'pull_request' && format('release-pr-{0}', github.event.pull_request.number) || 'release' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build-and-publish:
-    name: build-and-publish (${{ matrix.platform }})
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      # "all", "none", or space-separated recipe directory names.
+      foundation: ${{ steps.plan.outputs.foundation }}
+      ros: ${{ steps.plan.outputs.ros }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          SELECTED_RECIPES: ${{ inputs.recipes }}
+        run: |
+          foundation=all ros=all
+          if [ "$EVENT" = pull_request ]; then
+            # The recipes this pull request touches. A change elsewhere (variant files,
+            # the generator) is covered by the render job rather than a full rebuild.
+            mapfile -t changed < <(git diff --name-only "$BASE...$HEAD" |
+              sed -nE 's#^recipes/(foundation|ros)/([^/]+)/.*#\1 \2#p' | sort -u)
+            foundation="" ros=""
+            for entry in "${changed[@]}"; do
+              read -r stage name <<< "$entry"
+              # Deleted recipes have nothing left to build.
+              [ -f "recipes/$stage/$name/recipe.yaml" ] || continue
+              if [ "$stage" = foundation ]; then foundation+="$name "; else ros+="$name "; fi
+            done
+          elif [ -n "${SELECTED_RECIPES//[[:space:],]/}" ]; then
+            foundation="" ros=""
+            for name in $(printf '%s' "$SELECTED_RECIPES" | tr ',' ' '); do
+              if [ -f "recipes/foundation/$name/recipe.yaml" ]; then foundation+="$name "
+              elif [ -f "recipes/ros/$name/recipe.yaml" ]; then ros+="$name "
+              else echo "::error::No recipe named $name in recipes/foundation or recipes/ros"; exit 2
+              fi
+            done
+          fi
+          foundation="${foundation% }" ros="${ros% }"
+          echo "foundation=${foundation:-none}" >> "$GITHUB_OUTPUT"
+          echo "ros=${ros:-none}" >> "$GITHUB_OUTPUT"
+          echo "foundation: ${foundation:-none}"
+          echo "ros: ${ros:-none}"
+
+  render:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        timeout-minutes: 15
+        with:
+          pixi-version: v0.81.0
+          locked: true
+      - run: pixi run render
+
+  build:
+    name: build (${{ matrix.distro }}, ${{ matrix.platform }})
+    needs: plan
+    if: needs.plan.outputs.foundation != 'none' || needs.plan.outputs.ros != 'none'
+    permissions:
+      contents: read
+      # Trusted publishing: rattler-build exchanges the GitHub OIDC token with prefix.dev
+      # itself, so there is no API key anywhere in this repo. Pull requests never reach
+      # the upload step, and pull requests from forks get no OIDC token at all.
+      id-token: write
     strategy:
-      # One architecture failing must not cancel publishing on the other.
+      # One job failing must not cancel publishing in the others.
       fail-fast: false
       matrix:
+        # Another distro: a variants-<distro>.yaml, an isaac-forge/<distro> channel with
+        # this trusted publisher, and an entry here.
+        distro: [lyrical]
+        platform: [linux-64, linux-aarch64]
         include:
           - platform: linux-64
             runner: ubuntu-24.04
           - platform: linux-aarch64
             runner: ubuntu-24.04-arm
+          # Any package that fails to build or test fails the job. Known failures are
+          # skipped explicitly in the recipes (SKIP in scripts/gen_source.py) with the
+          # reason, so a red build always means something new broke.
+          - distro: lyrical
+            strict: true
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 720
-
+    env:
+      PLATFORM: ${{ matrix.platform }}
+      DISTRO: ${{ matrix.distro }}
+      STRICT: ${{ matrix.strict }}
     steps:
       - uses: actions/checkout@v7
 
@@ -62,158 +142,50 @@ jobs:
       # left alone because setup-pixi installs into it.
       - name: Free runner disk space
         run: |
-          df -h /
-          sudo rm -rf \
-            /usr/share/dotnet \
-            /usr/local/lib/android \
-            /opt/ghc \
-            /usr/local/share/boost \
-            /usr/local/.ghcup
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/share/boost /usr/local/.ghcup
           sudo apt-get clean
           df -h /
 
-      - uses: prefix-dev/setup-pixi@v0.10.0
+      - uses: prefix-dev/setup-pixi@v0.10.2
         # A hang here should fail fast rather than sit on the job timeout.
         timeout-minutes: 15
         with:
-          pixi-version: v0.75.0
+          pixi-version: v0.81.0
           # pixi.lock pins rattler-build, so CI builds with the same version as local.
           locked: true
 
-      # rattler-build 0.72.2+ performs trusted-publisher OIDC authentication for private
-      # prefix.dev reads as well as uploads, including solves and --skip-existing checks.
-
-      # -c ./output is what lets recipes resolve against packages built earlier in this
-      # same run. Keep authenticated isaac-forge second so local artifacts win while
-      # published foundations remain available to selective builds.
-      # Tests are deliberately deferred to the next step rather than run inline, and the
-      # reason is a real ordering limitation rather than a preference.
-      #
-      # rattler-build orders the recipes in a --recipe-dir by their *build* dependency
-      # graph, but a test environment has to install the package's whole *run* closure.
-      # For the ament_python packages those differ: isaac_ros_manipulation_orchestration
-      # builds against nothing but python/pip/setuptools, and only at test time does it
-      # need isaac_ros_manipulation_ros_python_utils -> isaac_ros_test. There is no
-      # build-graph edge to order on, so the alphabetically earlier orchestration is built
-      # and tested before isaac-ros-test exists, and its test env cannot solve:
-      #
-      #   Test failed: failed to setup test environment: Cannot solve the request because
-      #   of: ros-jazzy-isaac-ros-manipulation-orchestration ... would require
-      #   ros-jazzy-isaac-ros-test *, for which no candidates were found.
-      #
-      # Building everything first and testing afterwards removes the ordering question
-      # entirely -- by then every package is in ./output. This keeps the tests rather than
-      # dropping them, which a bare `--test skip` would do.
-      - name: Build selected recipes
+      - name: Build foundations
+        if: needs.plan.outputs.foundation != 'none'
         env:
-          SELECTED_RECIPES: ${{ inputs.recipes }}
+          RECIPES: ${{ needs.plan.outputs.foundation }}
         run: |
-          mkdir -p output
-          common_args=(
-            --output-dir output
-            --target-platform "${{ matrix.platform }}"
-            -m variants.yaml
-            --skip-existing all
-            --test skip
-            -c ./output
-            -c https://prefix.dev/isaac-forge
-            -c https://prefix.dev/robostack-jazzy
-            -c conda-forge
-          )
+          read -r -a recipes <<< "$RECIPES"
+          if [ "$RECIPES" = all ]; then recipes=(); fi
+          ./scripts/ci_build.sh build foundation "${recipes[@]}"
 
-          if [ -z "${SELECTED_RECIPES//[[:space:],]/}" ]; then
-            echo "No recipe subset selected; building all recipes for ${{ matrix.platform }}."
-            # Keep independent packages when one recipe fails. Tested artifacts are
-            # published below, so the channel itself is the cache for the next run and
-            # --skip-existing avoids rebuilding them.
-            if ! pixi run rattler-build build --recipe-dir recipes \
-                 --continue-on-failure "${common_args[@]}"; then
-              echo "::warning::Some recipes failed; testing and publishing the artifacts that did build."
-              if [ "${{ matrix.platform }}" = linux-64 ]; then
-                mkdir -p failed-packages
-                touch failed-packages/build-failed
-              fi
-            fi
-          else
-            # Build in the caller's order so a small dependency chain can be bootstrapped
-            # in one run (for example libv4l before nvv4l2).
-            mapfile -t selected < <(
-              printf '%s' "$SELECTED_RECIPES" | tr ',[:space:]' '\n' | grep -v '^$'
-            )
-            echo "Building ${#selected[@]} selected recipe(s): ${selected[*]}"
-            for name in "${selected[@]}"; do
-              if [[ ! "$name" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; then
-                echo "::error::Invalid recipe name: $name"
-                exit 2
-              fi
-              recipe="recipes/$name/recipe.yaml"
-              if [ ! -f "$recipe" ]; then
-                echo "::error::Recipe does not exist: $recipe"
-                exit 2
-              fi
-              pixi run rattler-build build --recipe "$recipe" "${common_args[@]}"
-            done
-          fi
-
-      # Every package's own tests, now that the whole set exists to resolve against.
-      # Runs them all before failing so one broken package reports as one failure rather
-      # than hiding the rest.
-      - name: Test all built packages
+      - name: Build ROS packages
+        if: needs.plan.outputs.ros != 'none'
+        env:
+          RECIPES: ${{ needs.plan.outputs.ros }}
         run: |
-          shopt -s nullglob
-          pkgs=(output/*/*.conda)
-          echo "testing ${#pkgs[@]} package(s)"
-          failed=()
-          for p in "${pkgs[@]}"; do
-            passed=false
-            for attempt in 1 2 3; do
-              if pixi run rattler-build test \
-                   --package-file "$p" \
-                   -c ./output \
-                   -c https://prefix.dev/isaac-forge \
-                   -c https://prefix.dev/robostack-jazzy \
-                   -c conda-forge; then
-                passed=true
-                break
-              fi
-              echo "::warning::Test attempt $attempt/3 failed for $(basename "$p")"
-              if [ "$attempt" -lt 3 ]; then
-                sleep $((attempt * 10))
-              fi
-            done
-            if [ "$passed" != true ]; then
-              failed+=("$(basename "$p")")
-              # Never upload an artifact that did not pass. Keep it outside output/
-              # because the publish glob intentionally includes every conda subdir.
-              mkdir -p failed-packages
-              mv "$p" failed-packages/
-            fi
-          done
-          if [ "${#failed[@]}" -gt 0 ]; then
-            printf '%s\n' "${failed[@]}" > failed-packages/packages.txt
-            if [ "${{ matrix.platform }}" = linux-aarch64 ]; then
-              # During ARM bootstrap some leaf packages can compile before their run
-              # closure exists (currently nvv4l2/visual-mapping branches). Quarantine
-              # those artifacts, but publish everything that did pass.
-              echo "::warning::${#failed[@]} ARM64 package(s) quarantined:"
-              printf '  %s\n' "${failed[@]}"
-            else
-              echo "::error::${#failed[@]} package(s) failed their tests:"
-              printf '  %s\n' "${failed[@]}"
-              touch failed-packages/test-failed
-            fi
-          else
-            echo "all ${#pkgs[@]} packages passed their tests"
-          fi
+          read -r -a recipes <<< "$RECIPES"
+          if [ "$RECIPES" = all ]; then recipes=(); fi
+          ./scripts/ci_build.sh build ros "${recipes[@]}"
 
-      # Build trees are large and are not needed to upload.
+      # After everything is built, because a test environment needs the package's whole
+      # run closure; see scripts/ci_build.sh.
+      - name: Test
+        run: ./scripts/ci_build.sh test
+
       - name: Drop build trees
         if: always()
         run: rm -rf output/bld output/src_cache output/.tmp
 
-      # `--skip-existing all` above keeps already-published files out of ./output, so this
-      # step sees only genuinely new package artifacts.
-      - name: Publish new packages to prefix.dev/isaac-forge
+      # `--skip-existing all` keeps already-published files out of ./output, so this sees
+      # only new packages.
+      - name: Publish to isaac-forge/${{ matrix.distro }}
+        if: github.event_name != 'pull_request'
         run: |
           shopt -s nullglob
           pkgs=(output/*/*.conda)
@@ -221,15 +193,13 @@ jobs:
             echo "No new packages -- everything already exists in the channel."
             exit 0
           fi
-          echo "Publishing ${#pkgs[@]} package(s):"
+          printf 'Publishing %s package(s):\n' "${#pkgs[@]}"
           printf '  %s\n' "${pkgs[@]}"
-          pixi run rattler-build upload prefix -c isaac-forge "${pkgs[@]}"
+          pixi run rattler-build upload prefix -c "isaac-forge/$DISTRO" "${pkgs[@]}"
 
-      # Publish valid independent packages before reporting the original failure. This
-      # makes retries incremental without spending the Actions cache quota on multi-GB
-      # package directories.
+      # Publish what passed before reporting failures, so retries stay incremental.
       - name: Report build or test failures
-        if: always() && matrix.platform == 'linux-64'
+        if: always()
         run: |
           if [ -e failed-packages/build-failed ] || [ -e failed-packages/test-failed ]; then
             echo "::error::One or more recipes failed; successful packages were still published."
@@ -240,7 +210,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: rattler-build-log-${{ matrix.platform }}
+          name: rattler-build-log-${{ matrix.distro }}-${{ matrix.platform }}
           path: |
             output/rattler-build-log.txt
             failed-packages/packages.txt

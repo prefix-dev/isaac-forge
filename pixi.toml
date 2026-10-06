@@ -16,7 +16,7 @@ platforms = ["linux-64", "linux-aarch64"]
 # ---------------------------------------------------------------------------
 
 [dependencies]
-rattler-build = ">=0.72.2"
+rattler-build = ">=0.76.1"
 python = ">=3.12"
 git = "*"
 git-lfs = "*"
@@ -33,6 +33,8 @@ libarchive = "*"   # bsdtar, reads .deb directly
 # These replace the old `layer0` task, which passed no channels and so could not resolve
 # ros-jazzy-isaac-ros-common -- it worked only back when recipes/ held nothing but vendored
 # binaries. Losing output/ once with no working rebuild command in the repo was enough.
+#
+# Both build ROS 2 Lyrical; Jazzy stays on the Isaac ROS 4.6 builds (see README).
 [tasks.build]
 description = "Build every recipe into ./output (resumable; add --fresh to start over)"
 cmd = "./scripts/build_all.sh"
@@ -49,9 +51,9 @@ cmd = "rm -rf output/bld output/src_cache output/.tmp && du -sh output"
 description = "Build just the VPI package"
 cmd = "./scripts/build_all.sh --recipe vpi"
 
-[tasks.arm64-render]
-description = "Render every recipe for linux-aarch64 without building (porting audit)"
-cmd = "rattler-build build --recipe-dir recipes --target-platform linux-aarch64 --render-only -m variants.yaml"
+[tasks.render]
+description = "Render every recipe for every distro and platform and check the result (no build)"
+cmd = "python scripts/test_variants.py"
 
 [tasks.inventory]
 description = "Regenerate packages.json from the cloned sources in src/"

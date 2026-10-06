@@ -1,0 +1,171 @@
+From: Isaac Forge <noreply@example.com>
+Subject: [PATCH] Link targets instead of ament_target_dependencies()
+
+ament_target_dependencies() was removed from ament_cmake in 2.8.6 (ament/ament_cmake#614),
+so this no longer configures on ROS 2 Lyrical. Link each dependency's exported
+${<pkg>_TARGETS} instead, as nvblox_ros already does. Plain signature, matching the
+other target_link_libraries() calls on these targets.
+---
+--- a/isaac_deploy/isaac_ros_deploy_ros2_control/CMakeLists.txt
++++ b/isaac_deploy/isaac_ros_deploy_ros2_control/CMakeLists.txt
+@@ -155,10 +155,9 @@
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   $<INSTALL_INTERFACE:include>
+ )
+-ament_target_dependencies(tensor_interface_utils
+-  hardware_interface
+-)
+ target_link_libraries(tensor_interface_utils
++  ${hardware_interface_TARGETS})
++target_link_libraries(tensor_interface_utils
+   isaac_deploy_core::types
+   isaac_deploy_core::tensor_utils
+   ${TORCH_LIBRARIES}
+@@ -200,21 +199,20 @@
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   $<INSTALL_INTERFACE:include>
+ )
+-ament_target_dependencies(isaac_ros_deploy_ros2_control_controllers
+-  controller_manager_msgs
+-  controller_interface
+-  hardware_interface
+-  pluginlib
+-  rcl_interfaces
+-  rclcpp
+-  rclcpp_lifecycle
+-  realtime_tools
+-  sensor_msgs
+-  std_msgs
+-  urdf
+-  isaac_ros_deploy_interfaces
+-  isaac_ros_deploy_converters
+-)
++target_link_libraries(isaac_ros_deploy_ros2_control_controllers
++  ${controller_manager_msgs_TARGETS}
++  ${controller_interface_TARGETS}
++  ${hardware_interface_TARGETS}
++  ${pluginlib_TARGETS}
++  ${rcl_interfaces_TARGETS}
++  ${rclcpp_TARGETS}
++  ${rclcpp_lifecycle_TARGETS}
++  ${realtime_tools_TARGETS}
++  ${sensor_msgs_TARGETS}
++  ${std_msgs_TARGETS}
++  ${urdf_TARGETS}
++  ${isaac_ros_deploy_interfaces_TARGETS}
++  ${isaac_ros_deploy_converters_TARGETS})
+ target_link_libraries(isaac_ros_deploy_ros2_control_controllers
+   leapp_backend_mapping
+   tensor_interface_utils
+@@ -243,15 +241,14 @@
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   $<INSTALL_INTERFACE:include>
+ )
+-ament_target_dependencies(isaac_ros_deploy_ros2_control_hardware
+-  hardware_interface
+-  pluginlib
+-  rclcpp
+-  rclcpp_lifecycle
+-  realtime_tools
+-  std_msgs
+-  sensor_msgs
+-)
++target_link_libraries(isaac_ros_deploy_ros2_control_hardware
++  ${hardware_interface_TARGETS}
++  ${pluginlib_TARGETS}
++  ${rclcpp_TARGETS}
++  ${rclcpp_lifecycle_TARGETS}
++  ${realtime_tools_TARGETS}
++  ${std_msgs_TARGETS}
++  ${sensor_msgs_TARGETS})
+ 
+ # Export controller plugin.
+ pluginlib_export_plugin_description_file(
+@@ -312,10 +309,9 @@
+     target_include_directories(${test_name} PRIVATE
+       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+     )
+-    ament_target_dependencies(${test_name}
+-      hardware_interface
+-      rclcpp
+-    )
++    target_link_libraries(${test_name}
++      ${hardware_interface_TARGETS}
++      ${rclcpp_TARGETS})
+     set_target_properties(${test_name} PROPERTIES
+       INSTALL_RPATH "${TORCH_INSTALL_PREFIX}/lib"
+       BUILD_RPATH "${TORCH_INSTALL_PREFIX}/lib"
+@@ -361,13 +357,12 @@
+   target_include_directories(joint_command_broadcaster_test PRIVATE
+     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   )
+-  ament_target_dependencies(joint_command_broadcaster_test
+-    controller_interface
+-    hardware_interface
+-    rclcpp
+-    rclcpp_lifecycle
+-    sensor_msgs
+-  )
++  target_link_libraries(joint_command_broadcaster_test
++    ${controller_interface_TARGETS}
++    ${hardware_interface_TARGETS}
++    ${rclcpp_TARGETS}
++    ${rclcpp_lifecycle_TARGETS}
++    ${sensor_msgs_TARGETS})
+   set_target_properties(joint_command_broadcaster_test PROPERTIES
+     INSTALL_RPATH "${TORCH_INSTALL_PREFIX}/lib"
+     BUILD_RPATH "${TORCH_INSTALL_PREFIX}/lib"
+@@ -381,12 +376,11 @@
+   target_include_directories(joint_parameter_controller_test PRIVATE
+     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   )
+-  ament_target_dependencies(joint_parameter_controller_test
+-    controller_interface
+-    hardware_interface
+-    rclcpp
+-    rclcpp_lifecycle
+-  )
++  target_link_libraries(joint_parameter_controller_test
++    ${controller_interface_TARGETS}
++    ${hardware_interface_TARGETS}
++    ${rclcpp_TARGETS}
++    ${rclcpp_lifecycle_TARGETS})
+   set_target_properties(joint_parameter_controller_test PROPERTIES
+     INSTALL_RPATH "${TORCH_INSTALL_PREFIX}/lib"
+     BUILD_RPATH "${TORCH_INSTALL_PREFIX}/lib"
+@@ -401,13 +395,12 @@
+   target_include_directories(ros_safety_controller_test PRIVATE
+     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   )
+-  ament_target_dependencies(ros_safety_controller_test
+-    controller_interface
+-    controller_manager_msgs
+-    hardware_interface
+-    rclcpp
+-    rclcpp_lifecycle
+-  )
++  target_link_libraries(ros_safety_controller_test
++    ${controller_interface_TARGETS}
++    ${controller_manager_msgs_TARGETS}
++    ${hardware_interface_TARGETS}
++    ${rclcpp_TARGETS}
++    ${rclcpp_lifecycle_TARGETS})
+   set_target_properties(ros_safety_controller_test PROPERTIES
+     INSTALL_RPATH "${TORCH_INSTALL_PREFIX}/lib"
+     BUILD_RPATH "${TORCH_INSTALL_PREFIX}/lib"
+@@ -416,11 +409,10 @@
+   # ForwardJointCommandController trajectory-mode sampling smoke test.
+   ament_add_gtest(test_forward_joint_command_controller_trajectory
+     test/test_forward_joint_command_controller_trajectory.cpp)
+-  ament_target_dependencies(test_forward_joint_command_controller_trajectory
+-    rclcpp
+-    isaac_ros_deploy_interfaces
+-    isaac_deploy_core
+-  )
++  target_link_libraries(test_forward_joint_command_controller_trajectory
++    ${rclcpp_TARGETS}
++    ${isaac_ros_deploy_interfaces_TARGETS}
++    ${isaac_deploy_core_TARGETS})
+ endif()
+ 
+ ament_export_targets(isaac_ros_deploy_ros2_control_targets HAS_LIBRARY_TARGET)
