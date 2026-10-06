@@ -23,8 +23,9 @@ longer receives updates. It also holds older 4.5 builds, so pin `"4.6.*"`. The f
 Each channel also serves its RoboStack distro (`robostack-lyrical` or `robostack-jazzy`), so a
 Pixi environment needs only that channel followed by `conda-forge`.
 
-Lyrical is new: packages that fail to build or test there are skipped rather than blocking
-a release, so check the channel page for what is available.
+A few Isaac ROS 5.0 packages do not build for Lyrical yet (cuVSLAM, nvblox, cuMotion's
+controllers, teleop and what depends on them); `SKIP` in `scripts/gen_source.py` lists each
+with its reason. Check the channel page for what is available.
 
 Here is a small environment for the Isaac ROS YOLOv8 pipeline:
 
