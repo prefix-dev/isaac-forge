@@ -26,7 +26,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aptclosure import BASE, closure, deps_of, parse  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RECIPES = os.path.join(ROOT, "recipes")
+# Repacks are NVIDIA binaries, built without a ROS distro: recipes/foundation. Source
+# recipes live in recipes/ros (gen_source.py) and must never be overwritten by a repack.
+RECIPES = os.path.join(ROOT, "recipes", "foundation")
+SOURCE_RECIPES = os.path.join(ROOT, "recipes", "ros")
 
 # Deb dependencies that a conda package must not carry:
 #   - the libc/toolchain family, handled by the conda sysroot (see __glibc below)
@@ -123,18 +126,23 @@ MAP.update({
 # maintained package with a vendored copy. Kept out of recipe generation while still
 # appearing in the dependency lists.
 def is_source_recipe(name: str) -> bool:
-    """True if recipes/<name> already holds a source-build recipe.
+    """True if recipes/foundation/<name> or recipes/ros/<name> holds a source-build recipe.
 
     Detected by inspecting the recipe rather than kept as a hand-maintained list: an
     explicit list silently went stale once already and gen_repack overwrote 27 source
     recipes with repacks. Anything fetching a tarball or a pinned commit is a source
     build and must not be clobbered.
     """
-    p = os.path.join(RECIPES, name, "recipe.yaml")
-    if not os.path.isfile(p):
-        return False
-    text = open(p, encoding="utf-8", errors="replace").read()
-    return bool(re.search(r"archive/refs/tags|archive/[0-9a-f]{40}|linuxtv\.org", text))
+    # recipes/ros directories drop the distro prefix: ros-jazzy-isaac-ros-nitros is
+    # recipes/ros/isaac-ros-nitros.
+    for root, d in ((RECIPES, name), (SOURCE_RECIPES, re.sub(r"^ros-[a-z]+-", "", name))):
+        p = os.path.join(root, d, "recipe.yaml")
+        if not os.path.isfile(p):
+            continue
+        text = open(p, encoding="utf-8", errors="replace").read()
+        if re.search(r"archive/refs/tags|archive/[0-9a-f]{40}|linuxtv\.org", text):
+            return True
+    return False
 
 
 EXTERNAL = {
@@ -596,8 +604,8 @@ source:
 {source_block}
 
 build:
-  # The apt index used to generate this recipe is amd64. Never publish its ELF
-  # payload under an ARM subdir; ARM blob recipes must point at an ARM source.
+  # The checked-in vendor payload is amd64. Do not mislabel it as an ARM package.
+  # Replace this with the corresponding ARM blob/source before enabling on Jetson.
   skip: target_platform == "linux-aarch64"
   number: 0
   script: build.sh
@@ -647,7 +655,7 @@ def main() -> None:
     else:
         names = args.targets
 
-    cache = os.path.join(ROOT, "demo", ".cache", "debs")
+    cache = os.path.join(ROOT, ".srccache", "debs")
     generated: set[str] = set()
     skipped: list[str] = []
 
@@ -684,7 +692,7 @@ def main() -> None:
         with open(os.path.join(d, "relink.py"), "w") as fh:
             fh.write(RELINK_PY)
         generated.add(cname)
-        print(f"  + recipes/{cname}")
+        print(f"  + recipes/foundation/{cname}")
 
     print(f"\ngenerated {len(generated)} recipes")
     if skipped:
