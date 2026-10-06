@@ -41,8 +41,9 @@ if [ "${TARGET_PLATFORM}" != "${NATIVE_PLATFORM}" ]; then
   exit 2
 fi
 
-CHANNELS=(-c ./output -c "https://prefix.dev/isaac-forge/${DISTRO}"
-          -c "https://prefix.dev/robostack-${DISTRO}" -c conda-forge)
+# robostack-<distro> and conda-forge come in through the channel's CEP-42 relations; see
+# scripts/ci_build.sh.
+CHANNELS=(-c ./output -c "https://prefix.dev/isaac-forge/${DISTRO}")
 
 shopt -s nullglob
 pkgs=()
