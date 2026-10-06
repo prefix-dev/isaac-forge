@@ -92,6 +92,7 @@ requirements:
     - ros-${{ ros_distro }}-rosidl-default-runtime
     - ros-${{ ros_distro }}-std-msgs
     - ros-${{ ros_distro }}-tensor-msgs
+    - ros2-distro-mutex
     - ros-${{ ros_distro }}-ament-cmake-auto
     - cuda-version 13.*
     - cuda-cudart-dev

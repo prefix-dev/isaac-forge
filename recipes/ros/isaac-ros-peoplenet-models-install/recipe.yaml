@@ -95,6 +95,7 @@ requirements:
     - ros-${{ ros_distro }}-ament-cmake
     - ros-${{ ros_distro }}-isaac-ros-common
     - ros-${{ ros_distro }}-isaac-ros-detectnet
+    - ros2-distro-mutex
     - ros-${{ ros_distro }}-ament-cmake-auto
     - cuda-version 13.*
     - cuda-cudart-dev

@@ -111,6 +111,7 @@ requirements:
     - ros-${{ ros_distro }}-tf2-msgs
     - ros-${{ ros_distro }}-tf2-ros
     - ros-${{ ros_distro }}-visualization-msgs
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

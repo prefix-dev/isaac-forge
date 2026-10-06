@@ -89,6 +89,7 @@ requirements:
     - ros-${{ ros_distro }}-hardware-interface
     - ros-${{ ros_distro }}-rclcpp
     - ros-${{ ros_distro }}-sensor-msgs
+    - ros2-distro-mutex
   run:
     - __glibc >=2.38
     - ros-${{ ros_distro }}-angles

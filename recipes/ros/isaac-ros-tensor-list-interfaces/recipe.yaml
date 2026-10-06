@@ -90,6 +90,7 @@ requirements:
     - ros-${{ ros_distro }}-rosidl-default-generators
     - ros-${{ ros_distro }}-rosidl-default-runtime
     - ros-${{ ros_distro }}-std-msgs
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

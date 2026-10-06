@@ -85,7 +85,7 @@ requirements:
     - ninja
     - pkg-config
   host:
-    - libopencv 4.13.*
+    - libopencv
     - py-opencv
     - ros-${{ ros_distro }}-ament-cmake-auto
     - ros-${{ ros_distro }}-cuda-buffer
@@ -103,6 +103,7 @@ requirements:
     - ros-${{ ros_distro }}-tf2-msgs
     - ros-${{ ros_distro }}-tf2-ros
     - ros-${{ ros_distro }}-vision-msgs
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev
@@ -110,7 +111,7 @@ requirements:
     - pyyaml
   run:
     - __glibc >=2.38
-    - libopencv 4.13.*
+    - libopencv
     - py-opencv
     - ros-${{ ros_distro }}-cuda-buffer
     - ros-${{ ros_distro }}-cv-bridge

@@ -674,7 +674,8 @@ TRAIT_DEPS = {
     "rosidl": [ROS + "rosidl-default-generators", ROS + "rosidl-default-runtime"],
     "python": ["python", "pyyaml"],
     "ament_auto": [ROS + "ament-cmake-auto"],
-    "opencv": ["libopencv 4.13.*"],
+    # Unpinned here; variants-<distro>.yaml pins it to what that RoboStack generation uses.
+    "opencv": ["libopencv"],
     # Pinned, and both bounds are load-bearing. conda-forge's libcvcuda-dev 0.16
     # ships lib/cmake/{cvcuda,nvcv_types}/*-config.cmake; 0.17 makes DataType's
     # native conversion explicit, while the adapted Isaac headers require 0.16.
@@ -1219,6 +1220,14 @@ PATCHES = {
         "patches/0001-defer-isaac-ros-ws-check.patch"],
 }
 
+# Every ROS recipe has RoboStack's distro mutex in host. Its weak run export
+# (ros2-distro-mutex >=0.21,<0.22 for Lyrical's build 27) ties each package to the RoboStack
+# generation it was compiled against, as every RoboStack package is. Without it the solver
+# mixes generations: one package pinning an older OpenCV dragged the whole ROS runtime back
+# to build 25, while isaac_ros_tensor_msgs needed build 27's serializers and failed to load.
+# variants-<distro>.yaml pins the version.
+DISTRO_MUTEX = "ros2-distro-mutex"
+
 # Build-number bumps that must survive recipe regeneration.
 BUILD_NUMBERS = {
     ROS + "isaac-ros-cvcuda-utils": 2,
@@ -1422,7 +1431,7 @@ SYSTEM = {
     "eigen3": "eigen",
     "yaml-cpp": "yaml-cpp",
     "boost": "libboost-devel",
-    "libopencv-dev": "libopencv 4.13.*",
+    "libopencv-dev": "libopencv",
     "cvcuda0-dev": "libcvcuda-dev >=0.16,<0.17",
     "magic_enum": "magic_enum",
     "nlohmann_json": "nlohmann_json",
@@ -1695,7 +1704,7 @@ def emit_python(name: str, repo: str, path: str, base: str, pkgxml: str,
     # locate isaac_ros_common's scripts directory, then run its version-info generator
     # as a build_py subcommand. That makes the ament index a build-time requirement, not
     # just a runtime one -- hence the host block below and the AMENT_PREFIX_PATH export.
-    host = ["python", "pip", "setuptools"]
+    host = ["python", "pip", "setuptools", DISTRO_MUTEX]
     setup_py = os.path.join(base, "setup.py")
     setup_src = (open(setup_py, encoding="utf-8", errors="replace").read()
                  if os.path.isfile(setup_py) else "")
@@ -1806,7 +1815,7 @@ def emit(name: str, repo: str, path: str) -> str | None:
     traits = detect(cml, pkgxml, path)
     deps = deps_of(pkgxml, name)
 
-    host = list(deps)
+    host = list(deps) + [DISTRO_MUTEX]
     for extra in EXTRA_HOST.get(name, []):
         if extra not in host:
             host.append(extra)

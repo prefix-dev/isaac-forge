@@ -93,6 +93,7 @@ requirements:
     - ros-${{ ros_distro }}-tf2-geometry-msgs
     - ros-${{ ros_distro }}-tf2-ros
     - ros-${{ ros_distro }}-vision-msgs
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

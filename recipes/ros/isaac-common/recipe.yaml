@@ -87,6 +87,7 @@ requirements:
   host:
     - ros-${{ ros_distro }}-ament-cmake-auto
     - ros-${{ ros_distro }}-isaac-ros-common
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

@@ -91,6 +91,7 @@ requirements:
     - ros-${{ ros_distro }}-rcutils
     - ros-${{ ros_distro }}-rmw
     - ros-${{ ros_distro }}-rosidl-buffer
+    - ros2-distro-mutex
     - cuda-cudart-dev
     - cuda-nvtx-dev
   run:

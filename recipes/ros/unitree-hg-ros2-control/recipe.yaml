@@ -93,6 +93,7 @@ requirements:
     - ros-${{ ros_distro }}-rclcpp
     - ros-${{ ros_distro }}-rclcpp-lifecycle
     - ros-${{ ros_distro }}-realtime-tools
+    - ros2-distro-mutex
   run:
     - __glibc >=2.38
     - ros-${{ ros_distro }}-diagnostic-msgs

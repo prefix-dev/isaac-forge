@@ -87,6 +87,7 @@ requirements:
     - ros-${{ ros_distro }}-ament-cmake
     - ros-${{ ros_distro }}-isaac-ros-deploy-converters
     - ros-${{ ros_distro }}-launch-ros
+    - ros2-distro-mutex
   run:
     - __glibc >=2.38
     - ros-${{ ros_distro }}-isaac-ros-deploy-converters

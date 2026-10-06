@@ -104,6 +104,7 @@ requirements:
     - ros-${{ ros_distro }}-rviz2
     - ros-${{ ros_distro }}-semantic-label-conversion
     - ros-${{ ros_distro }}-xacro
+    - ros2-distro-mutex
     - ros-${{ ros_distro }}-ament-cmake-auto
     - cuda-version 13.*
     - cuda-cudart-dev

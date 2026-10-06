@@ -99,6 +99,7 @@ requirements:
     - ros-${{ ros_distro }}-rclcpp-components
     - ros-${{ ros_distro }}-sensor-msgs
     - ros-${{ ros_distro }}-sensor-msgs-py
+    - ros2-distro-mutex
     - nvv4l2
     - cuda-version 13.*
     - cuda-cudart-dev

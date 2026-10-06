@@ -92,6 +92,7 @@ requirements:
     - ros-${{ ros_distro }}-isaac-ros-ess-models-install
     - ros-${{ ros_distro }}-isaac-ros-tensor-proc
     - ros-${{ ros_distro }}-isaac-ros-tensor-rt
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

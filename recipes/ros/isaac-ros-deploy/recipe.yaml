@@ -94,6 +94,7 @@ requirements:
     - ros-${{ ros_distro }}-isaac-ros-deploy-interfaces
     - ros-${{ ros_distro }}-isaac-ros-deploy-ros2-control
     - ros-${{ ros_distro }}-mujoco-ros2-control
+    - ros2-distro-mutex
   run:
     - __glibc >=2.38
     - ros-${{ ros_distro }}-isaac-deploy-core

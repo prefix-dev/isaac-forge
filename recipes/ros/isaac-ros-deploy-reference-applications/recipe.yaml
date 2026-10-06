@@ -102,6 +102,7 @@ requirements:
     - ros-${{ ros_distro }}-rclpy
     - ros-${{ ros_distro }}-sensor-msgs
     - ros-${{ ros_distro }}-std-msgs
+    - ros2-distro-mutex
   run:
     - __glibc >=2.38
     - pyyaml

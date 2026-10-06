@@ -118,6 +118,7 @@ requirements:
     - ros-${{ ros_distro }}-rclcpp
     - ros-${{ ros_distro }}-rclcpp-components
     - ros-${{ ros_distro }}-sensor-msgs
+    - ros2-distro-mutex
     - libnpp-dev
     - libcurand-dev
     - gflags

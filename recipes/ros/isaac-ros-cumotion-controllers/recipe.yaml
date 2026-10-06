@@ -106,6 +106,7 @@ requirements:
     - ros-${{ ros_distro }}-tf2-geometry-msgs
     - ros-${{ ros_distro }}-tf2-ros
     - ros-${{ ros_distro }}-visualization-msgs
+    - ros2-distro-mutex
     - cuda-toolkit
     - cuda-version 13.*
     - cuda-cudart-dev

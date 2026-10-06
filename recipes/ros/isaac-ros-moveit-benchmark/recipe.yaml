@@ -89,6 +89,7 @@ requirements:
     - ros-${{ ros_distro }}-rclpy
     - ros-${{ ros_distro }}-ros2-benchmark
     - tqdm
+    - ros2-distro-mutex
   run:
     - __glibc >=2.38
     - pytorch-gpu ==2.13.0 cuda130_generic_*_202

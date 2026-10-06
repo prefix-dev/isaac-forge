@@ -97,6 +97,7 @@ requirements:
     - ros-${{ ros_distro }}-nvblox-ros-common
     - ros-${{ ros_distro }}-nvblox-ros-python-utils
     - ros-${{ ros_distro }}-nvblox-rviz-plugin
+    - ros2-distro-mutex
     - ros-${{ ros_distro }}-ament-cmake-auto
     - cuda-version 13.*
     - cuda-cudart-dev

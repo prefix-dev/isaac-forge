@@ -32,6 +32,7 @@ requirements:
     - python
     - pip
     - setuptools
+    - ros2-distro-mutex
   run:
     - python
     - ros-${{ ros_distro }}-geometry-msgs

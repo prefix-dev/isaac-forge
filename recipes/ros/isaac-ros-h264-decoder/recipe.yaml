@@ -100,6 +100,7 @@ requirements:
     - ros-${{ ros_distro }}-sensor-msgs
     - ros-${{ ros_distro }}-sensor-msgs-py
     - ros-${{ ros_distro }}-vpi-conversions
+    - ros2-distro-mutex
     - nvv4l2
     - libv4l
     - cuda-version 13.*

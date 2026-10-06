@@ -95,6 +95,7 @@ requirements:
     - ros-${{ ros_distro }}-rclpy
     - ros-${{ ros_distro }}-ur5-gripper-moveit-config
     - ros-${{ ros_distro }}-ur5-robotiq-85-description
+    - ros2-distro-mutex
     - cuda-toolkit
   run:
     - __glibc >=2.38

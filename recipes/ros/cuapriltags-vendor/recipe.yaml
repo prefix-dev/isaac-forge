@@ -94,6 +94,7 @@ requirements:
     - pkg-config
   host:
     - ros-${{ ros_distro }}-ament-cmake
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

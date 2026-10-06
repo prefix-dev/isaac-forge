@@ -90,6 +90,7 @@ requirements:
     - ros-${{ ros_distro }}-isaac-ros-depth-image-proc
     - ros-${{ ros_distro }}-isaac-ros-image-proc
     - ros-${{ ros_distro }}-isaac-ros-stereo-image-proc
+    - ros2-distro-mutex
     - cuda-version 13.*
     - cuda-cudart-dev
     - cuda-nvtx-dev

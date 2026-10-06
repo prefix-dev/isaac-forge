@@ -114,6 +114,7 @@ requirements:
     - ros-${{ ros_distro }}-unitree-g1-description
     - ros-${{ ros_distro }}-unitree-hg-ros2-control
     - ros-${{ ros_distro }}-xacro
+    - ros2-distro-mutex
   run:
     - __glibc >=2.38
     - ros-${{ ros_distro }}-controller-manager

@@ -85,6 +85,7 @@ requirements:
     - pkg-config
   host:
     - ros-${{ ros_distro }}-ament-cmake
+    - ros2-distro-mutex
   run:
     - __glibc >=2.38
     # none

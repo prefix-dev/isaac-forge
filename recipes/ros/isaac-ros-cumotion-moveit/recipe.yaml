@@ -97,6 +97,7 @@ requirements:
     - ros-${{ ros_distro }}-rclcpp
     - ros-${{ ros_distro }}-rclcpp-components
     - ros-${{ ros_distro }}-ros2launch
+    - ros2-distro-mutex
     - ros-${{ ros_distro }}-ament-cmake-auto
     - cuda-version 13.*
     - cuda-cudart-dev

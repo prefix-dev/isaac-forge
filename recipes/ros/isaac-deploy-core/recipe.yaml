@@ -93,6 +93,7 @@ requirements:
     - ros-${{ ros_distro }}-rclcpp
     - ros-${{ ros_distro }}-rcpputils
     - yaml-cpp
+    - ros2-distro-mutex
     - cuda-toolkit
     - triton-server ==2.60.0
     - cuda-version 13.*
