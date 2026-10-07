@@ -7,7 +7,7 @@ demo/.cache/
 slam/data/
 bench/assets/
 bench/ws/
-yolo/.cache/
+examples/*/.cache/
 verify/.pixi/
 upstream/*/
 __pycache__/

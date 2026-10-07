@@ -1,0 +1,62 @@
+[workspace]
+name = "isaac-forge-find-anything"
+description = "Open-vocabulary detection with Isaac ROS Grounding DINO, using packages from prefix.dev/isaac-forge"
+channels = ["https://prefix.dev/conda-forge"]
+# The Isaac Forge binaries target Ubuntu 24.04's glibc floor.
+platforms = [
+  { platform = "linux-64", glibc = "2.38" },
+  # JetPack 7 on Orin: CUDA 13 driver, SM87 GPU.
+  { name = "jetson", platform = "linux-aarch64", glibc = "2.38", cuda = { driver = "13", arch = "8.7" } },
+]
+
+[dependencies]
+# Fetches the pinned BERT tokenizer; see find_anything.py.
+huggingface_hub = "*"
+numpy = "*"
+py-opencv = ">=4.13"
+rerun-sdk = ">=0.38,<0.39"
+
+# ROS 2 Lyrical with Isaac ROS 5.0.
+[environments.default]
+channels = ["https://prefix.dev/isaac-forge/lyrical"]
+
+[environments.default.dependencies]
+python = "3.14.*"
+ros-lyrical-ros-base = "*"
+ros-lyrical-rclcpp-components = "*"
+ros-lyrical-vision-msgs = "*"
+# Image -> GPU resize/pad -> tensor -> Grounding DINO (TensorRT) -> Detection2DArray.
+ros-lyrical-isaac-ros-grounding-dino = "5.0.*"
+ros-lyrical-isaac-ros-grounding-dino-interfaces = "5.0.*"
+ros-lyrical-isaac-ros-image-proc = "5.0.*"
+ros-lyrical-isaac-ros-tensor-proc = "5.0.*"
+ros-lyrical-isaac-ros-tensor-rt = "5.0.*"
+
+# `pixi run -e jazzy ...`: ROS 2 Jazzy with Isaac ROS 4.6, NVIDIA's last Jazzy release.
+[environments.jazzy]
+channels = ["https://prefix.dev/isaac-forge/jazzy"]
+
+[environments.jazzy.dependencies]
+python = "3.12.*"
+ros-jazzy-ros-base = "*"
+ros-jazzy-rclcpp-components = "*"
+ros-jazzy-vision-msgs = "*"
+ros-jazzy-isaac-ros-grounding-dino = "4.6.*"
+ros-jazzy-isaac-ros-grounding-dino-interfaces = "4.6.*"
+ros-jazzy-isaac-ros-image-proc = "4.6.*"
+ros-jazzy-isaac-ros-tensor-proc = "4.6.*"
+ros-jazzy-isaac-ros-tensor-rt = "4.6.*"
+# The text tokenizer node imports it; the frozen 4.6 package does not declare it.
+transformers = "*"
+
+[tasks.check]
+description = "Show that Pixi resolved the Isaac ROS Grounding DINO packages"
+cmd = "ros2 pkg prefix isaac_ros_grounding_dino && ros2 component types | grep -E 'GroundingDino|TensorRTNode' && python -c 'import transformers'"
+
+[tasks.demo]
+description = "Find the cats and remote controls in a sample photo and show them in Rerun"
+cmd = "python find_anything.py"
+
+[tasks.webcam]
+description = "Find whatever you type in your webcam feed, live in Rerun"
+cmd = "python find_anything.py --source 0"

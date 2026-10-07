@@ -8,37 +8,31 @@ packages work alongside [RoboStack](https://robostack.github.io/) and can be ins
 
 The packages are published on prefix.dev:
 
-| ROS 2 | Isaac ROS | Isaac ROS channel | RoboStack channel | Python |
-|---|---|---|---|---|
-| Lyrical | 5.0 | [`isaac-forge/lyrical`](https://prefix.dev/channels/isaac-forge/lyrical) | `robostack-lyrical` | 3.14 |
-| Jazzy | 4.6 | [`isaac-forge`](https://prefix.dev/channels/isaac-forge) | `robostack-jazzy` | 3.12 |
+| ROS 2 | Isaac ROS | Channel | Python |
+|---|---|---|---|
+| Lyrical | 5.0 | [`isaac-forge/lyrical`](https://prefix.dev/channels/isaac-forge/lyrical) | 3.14 |
+| Jazzy | 4.6 | [`isaac-forge/jazzy`](https://prefix.dev/channels/isaac-forge/jazzy) | 3.12 |
 
 Isaac ROS 5.0 needs the ROS 2 buffer API that arrives with Lyrical: its GPU image and tensor
 pipeline exchanges `rosidl::Buffer` message fields, which Jazzy's messages do not have.
 NVIDIA publishes 5.0 for Lyrical only, so Jazzy stays on 4.6, NVIDIA's last Jazzy release.
-Those are the builds this repository made before the 5.0 upgrade, in the flat `isaac-forge`
-channel, which no longer receives updates. It also holds older 4.5 and some 5.0 Jazzy
-builds, so pin `"4.6.*"`.
+`isaac-forge/jazzy` holds the builds this repository made before the 5.0 upgrade and no
+longer receives updates. It also holds older 4.5 builds, so pin `"4.6.*"`. The flat
+`isaac-forge` channel is the old home of those builds and is frozen.
 
-A Pixi environment should use these channels, in this order:
+Each channel also serves its RoboStack distro (`robostack-lyrical` or `robostack-jazzy`), so a
+Pixi environment needs only that channel followed by `conda-forge`.
 
-1. the Isaac ROS channel, for Isaac ROS and the few dependencies packaged here
-2. `robostack-<distro>` for ROS 2 itself
-3. `conda-forge` for everything else
-
-Lyrical is new: packages that fail to build or test there are skipped rather than blocking
-a release, so check the channel page for what is available.
+A few Isaac ROS 5.0 packages do not build for Lyrical yet (cuVSLAM, nvblox, cuMotion's
+controllers, teleop and what depends on them); `SKIP` in `scripts/gen_source.py` lists each
+with its reason. Check the channel page for what is available.
 
 Here is a small environment for the Isaac ROS YOLOv8 pipeline:
 
 ```toml
 # pixi.toml
 [workspace]
-channels = [
-  "https://prefix.dev/isaac-forge/lyrical",
-  "https://prefix.dev/robostack-lyrical",
-  "conda-forge",
-]
+channels = ["https://prefix.dev/isaac-forge/lyrical", "conda-forge"]
 platforms = [
   { platform = "linux-64", glibc = "2.38" },
   # JetPack 7 on Orin Nano (SM87)
@@ -67,7 +61,7 @@ compute capability to choose the Orin TensorRT build. The packages target the Ub
 glibc floor (`2.38`) and the CUDA 13 stack, so GPU workloads also need a compatible NVIDIA
 driver. Pixi installs the user-space CUDA libraries; it does not install the host driver.
 
-For Jazzy, use `isaac-forge` and `robostack-jazzy`, `python = "3.12.*"`, the
+For Jazzy, use `https://prefix.dev/isaac-forge/jazzy`, `python = "3.12.*"`, the
 `ros-jazzy-*` package names, and `"4.6.*"`.
 
 Package names follow the usual RoboStack convention: the ROS package
@@ -76,8 +70,13 @@ Package names follow the usual RoboStack convention: the ROS package
 channel pages. Pixi resolves the package's NITROS,
 ROS, CUDA, and other library dependencies automatically.
 
-For a complete working project, see [`yolo/`](yolo/README.md). Its `pixi.toml` consumes the
-public channel and runs YOLOv8 TensorRT inference on an image, video, webcam, or RTSP stream.
+For complete working projects, see [`examples/`](examples/). Each one is a Pixi workspace
+that runs on Lyrical by default and on Jazzy with `pixi run -e jazzy ...`:
+
+- [`examples/yolov8`](examples/yolov8/README.md) runs YOLOv8 TensorRT inference on an image,
+  video, webcam, or RTSP stream.
+- [`examples/find-anything`](examples/find-anything/README.md) finds whatever you type in a
+  photo or your webcam feed, with NVIDIA's open-vocabulary Grounding DINO.
 
 https://github.com/user-attachments/assets/3fdf53d4-5ca1-434b-a05b-74456d565907
 
@@ -193,7 +192,7 @@ scripts/gen_repack.py    vendor-package recipe generator
 packages.json            generated Isaac ROS package inventory
 variants.yaml            shared CUDA and compiler pins
 variants-<distro>.yaml   ros_distro and Python per ROS distro
-yolo/                    YOLOv8 inference example for x86_64 and Jetson/ARM64
+examples/                runnable Pixi workspaces for x86_64 and Jetson/ARM64
 output/                  local package channel (gitignored)
 ```
 
