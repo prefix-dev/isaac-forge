@@ -1,14 +1,8 @@
 src/
 output/
 .pixi/
-.buildtmp/
 .srccache/
-demo/.cache/
-slam/data/
-bench/assets/
-bench/ws/
-examples/*/.cache/
-verify/.pixi/
+yolo/.cache/
 upstream/*/
 __pycache__/
 *.pyc

@@ -9,10 +9,9 @@ platforms = ["linux-64", "linux-aarch64"]
 # ---------------------------------------------------------------------------
 # Development / build environment.
 #
-# This workspace builds the packages; it is not the runtime environment.
-# Layer 0 (vendored NVIDIA binaries) is built with rattler-build from
-# `recipes/`. Layer 2 (the Isaac ROS packages themselves) is built from source
-# with pixi-build-ros against robostack-jazzy — see `ws/pixi.toml`.
+# This workspace builds the packages; it is not the runtime environment (see examples/
+# for that). rattler-build builds the NVIDIA packages in `recipes/foundation/`, then the
+# Isaac ROS packages in `recipes/ros/` from source against the distro's RoboStack.
 # ---------------------------------------------------------------------------
 
 [dependencies]
@@ -29,10 +28,6 @@ libarchive = "*"   # bsdtar, reads .deb directly
 # The two halves of a full rebuild. `build` skips every package test and `test` runs them
 # afterwards, because a package's tests resolve its own run dependencies and early in a
 # from-scratch build those siblings are not in output/ yet. See the scripts for the rest.
-#
-# These replace the old `layer0` task, which passed no channels and so could not resolve
-# ros-jazzy-isaac-ros-common -- it worked only back when recipes/ held nothing but vendored
-# binaries. Losing output/ once with no working rebuild command in the repo was enough.
 #
 # Both build ROS 2 Lyrical; Jazzy stays on the Isaac ROS 4.6 builds (see README).
 [tasks.build]
