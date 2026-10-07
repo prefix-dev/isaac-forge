@@ -15,14 +15,20 @@ Nano. TensorRT then builds a GPU-specific engine in `.cache/`, which can take a 
 the first time.
 
 ```bash
-cd yolo
+cd examples/yolov8
 pixi run check
 pixi run demo
 ```
 
-The environment supports both x86_64 Linux and Jetson/ARM64. Its ARM platform declares
-JetPack 7, CUDA 13, and SM87, so Pixi selects the Orin TensorRT payload as well as
-`ros-jazzy-isaac-ros-image-proc` from isaac-forge.
+The default environment is ROS 2 Lyrical with Isaac ROS 5.0. The `jazzy` environment runs
+the same demo on ROS 2 Jazzy with Isaac ROS 4.6:
+
+```bash
+pixi run -e jazzy demo
+```
+
+Both environments support x86_64 Linux and Jetson/ARM64. The ARM platform declares
+JetPack 7, CUDA 13, and SM87, so Pixi selects the Orin TensorRT payload.
 
 The demo opens the Rerun viewer with the image and 2D detection boxes, and also
 writes an annotated image to `.cache/yolov8_result.png`.
@@ -47,7 +53,7 @@ A webcam, video file, RTSP stream, or other OpenCV-compatible URL can be used as
 the source. The Rerun timeline updates with every inference result:
 
 ```bash
-pixi run video --source 0                    # default webcam
+pixi run video --source 0             # default webcam
 pixi run video --source /path/to/video.mp4
 pixi run video --source /path/to/video.mp4 --loop
 pixi run video --source rtsp://camera.example/stream
