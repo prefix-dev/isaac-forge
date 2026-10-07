@@ -6,7 +6,9 @@ channels = ["https://prefix.dev/conda-forge"]
 platforms = [
   { platform = "linux-64", glibc = "2.38" },
   # JetPack 7 on Orin: CUDA 13 driver, SM87 GPU.
-  { name = "jetson", platform = "linux-aarch64", glibc = "2.38", cuda = { driver = "13", arch = "8.7" } },
+  { name = "jetson-nano", platform = "linux-aarch64", glibc = "2.38", cuda = { driver = "13", arch = "8.7" } },
+  # The newer Jetson devices (Thor, Xavier) with CUDA 13, don't need the 8.7 arch.
+  { name = "jetson", platform = "linux-aarch64", glibc = "2.38", cuda = "13" },
 ]
 
 [dependencies]
